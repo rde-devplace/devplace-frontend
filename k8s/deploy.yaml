@@ -1,0 +1,24 @@
+  apiVersion: apps/v1
+  kind: Deployment
+  metadata:
+    name: frontend-ide
+    labels:
+      app: frontend-ide
+  spec:
+    replicas: 1
+    selector:
+      matchLabels:
+        app: frontend-ide
+    template:
+      metadata:
+        annotations: 
+          configmap-version: "2311272147"
+        labels:
+          app: frontend-ide
+      spec:
+        containers:
+          - name: frontend-ide-container
+            image: amdp-registry.skamdp.org/mydev-ywyi/frontend-ide:1.0
+            imagePullPolicy: Always
+
+

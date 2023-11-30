@@ -1,0 +1,146 @@
+<script setup lang="ts">
+import { ref } from 'vue';
+import axios from 'axios';
+import { StorageName, generateHTML, useDarkGlobal } from '../utils';
+import MonacoEditor from './MonacoEditor.vue';
+import Tabs from './Tabs.vue';
+
+const backendURL = import.meta.env.VITE_KUBE_BACKEND_URL;
+
+const items = ref([
+  { text: 'HTML', value: 'html' },
+  { text: 'CSS', value: 'css' },
+  { text: 'JS', value: 'javascript' },
+  { text: 'YAML', value: 'yaml' },
+]);
+
+const k8sResourceTypes = ref([
+  { text: 'Pod', value: 'pod.yaml' },
+  { text: 'Service', value: 'service.yaml' },
+  { text: 'Deployment', value: 'deployment.yaml' },
+]);
+
+const buttonToggled = ref(false)
+const toggleButtonStyle = () => {  // 추가: 버튼 상태를 변경하는 함수
+  buttonToggled.value = !buttonToggled.value;
+}
+
+const yamlData = ref('') 
+const selectedK8sResource = ref(k8sResourceTypes.value[0]);
+const popupVisible = ref(false); // For showing the popup
+const iframeVisible = ref(false); // For showing the iframe
+
+const wettyURL = "https://kube-pattern.amdp-dev.skamdp.org/k9/wetty"
+
+const openPopup = () => {
+  popupVisible.value = true;
+}
+
+const openInSameWindow = () => {
+  iframeVisible.value = true;
+  popupVisible.value = false;
+}
+
+const openInNewTab = () => {
+  window.open(wettyURL, "_blank");
+  popupVisible.value = false;
+}
+
+const closeIframe = () => {
+  iframeVisible.value = false;
+}
+</script>
+
+<template>
+  <main class="border-t border-gray-200 dark:border-gray-700">
+    <div class="flex flex-row h-full height: 80vh" style=" height: 80vh;">
+      <div id="split-0" class="w-full">
+        <Tabs v-model="currentTab" :items="items" />
+        <span class="gray-backgroud-label">Resource Type &nbsp;&nbsp;&nbsp;   </span>
+        <select v-model="selectedK8sResource">
+          <option v-for="resource in k8sResourceTypes" :value="resource">{{ resource.text }}</option>
+        </select>
+
+        <MonacoEditor :active-tab="currentTab" :content="yamlData" />
+
+        <!-- Button to open the popup -->
+        <button class="open-popup-button" style="background-color: #007BFF; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-size: 1.1em;" @click="openPopup">Open Wetty Terminal</button>
+
+        <!-- Popup for selecting open method -->
+        <div v-if="popupVisible" class="modal">
+          <button @click="openInSameWindow">Open in Same Window</button>
+          <button @click="openInNewTab">Open in New Tab</button>
+        </div>
+
+        <!-- iFrame for the terminal -->
+        <iframe v-if="iframeVisible" class="terminal-iframe" :src="wettyURL" frameborder="0"></iframe>
+        <button v-if="iframeVisible" class="iframe-close-button" style="background-color: #007BFF; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-size: 1.1em;" @click="closeIframe">Close Terminal</button>
+      </div>
+    </div>
+  </main>
+</template>
+
+<style>
+/* ... your existing styles ... */
+
+.modal {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 1000;
+  background: white;
+  border: 1px solid #ccc;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.terminal-iframe {
+  width: 100%;
+  height: 50%;
+  border: none;
+}
+
+.iframe-close-button {
+  position: fixed;
+  bottom: 10px;
+  right: 10px;
+  z-index: 1001;
+}
+
+.open-popup-button {
+  position: fixed;
+  bottom: 10px;
+  left: 10px;
+  z-index: 1002;
+  transition: background-color 0.3s, color 0.3s; /* 추가: 배경색과 텍스트 색상 전환 */
+}
+
+.open-popup-button.toggled { 
+  background-color: white;
+  color: #007BFF;
+  border: 1px solid #007BFF;
+}
+
+.open-popup-button:active {
+  transform: scale(0.95); /* 약간의 축소 효과를 줍니다. */
+  background-color: #0056b3; /* 조금 더 진한 색으로 변경 */
+}
+
+.gray-backgroud-label {
+  margin-right: 10px;  /* or any other value you find suitable */
+  margin-left: 20px;  /* or any other value you find suitable */
+  background-color: #cccccc; /* 회색 배경색 */
+  padding: 2px 6px; /* 옵션: 텍스트 주위에 패딩 추가 */    
+}
+
+
+/* Making the main content scrollable */
+main {
+  overflow-y: auto;
+}
+
+</style>
+
