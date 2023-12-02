@@ -64,11 +64,11 @@ const fetchUserId = async () => {
 
 const openCreateWebIDEPopup = async () => {
   // you had comment out the following two lines to test the code
-  //userName.value = await fetchUserName()
-  //userId.value = await fetchUserId()
+  userName.value = await fetchUserName()
+  userId.value = await fetchUserId()
   // test code YWYI
-   userName.value = 'himang10'
-   userId.value = 'xxxxxxxxxxxx'
+  // userName.value = 'himang10'
+  // userId.value = 'xxxxxxxxxxxx'
   // eslint-disable-next-line no-console
   console.log(userName)
   if (userName.value) {

@@ -57,6 +57,7 @@ export default {
   created() {
     // 컴포넌트 생성 시 git.id를 userName으로 설정
     this.ideConfigSpec.vscode.git.id = this.userName;
+    this.ideConfigSpec.userName = this.userName;
   },
   methods: {
     async submitCreateWebIDE() { // <-- Use async because axios is promise-based
@@ -68,6 +69,10 @@ export default {
 
       const name = structuredData.userName
       const ns = this.nameSpace
+
+      if(structuredData.webssh.permission.useType === 'create') {
+        structuredData.webssh.permission.serviceAccountName = `${name}-ide-account`
+      }
 
       const ideConfigApiUrl = `${wettyURL}api/ideconfig/ide?namespace=${ns}&name=${name}`
       const vscodeRouteApiUrl = `${wettyURL}api/vscode/route/${name}`

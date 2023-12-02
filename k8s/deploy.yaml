@@ -12,7 +12,7 @@
     template:
       metadata:
         annotations: 
-          configmap-version: "2311272147"
+          configmap-version: "2311301707"
         labels:
           app: frontend-ide
       spec:

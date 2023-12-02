@@ -11,7 +11,8 @@ DOCKER_REGISTRY_PASSWORD=0Ohfvw1Fv0fETInThs4waSyCitLTMrfi
 VERSION="1.0"
 
 # Docker 이미지 빌드
-docker build --tag ${IMAGE_NAME}:${VERSION} --platform=linux/amd64 --no-cache .
+#docker build --tag ${IMAGE_NAME}:${VERSION} --platform=linux/amd64 --no-cache .
+docker build --tag ${IMAGE_NAME}:${VERSION} --platform=linux/amd64 .
 docker tag  ${IMAGE_NAME}:${VERSION} ${DOCKER_REGISTRY}/${IMAGE_NAME}:${VERSION}
 
 # Docker 이미지 푸시
