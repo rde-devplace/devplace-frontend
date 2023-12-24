@@ -75,7 +75,7 @@ export default {
       }
 
       const ideConfigApiUrl = `${wettyURL}api/ide-configs/custom-resource?namespace=${ns}&name=${name}`
-      const vscodeRouteApiUrl = `${wettyURL}api/route/vscode/${name}`
+      const vscodeRouteApiUrl = `${wettyURL}api/route/vscode?namespace=${ns}&name=${name}`
 
       try {
         console.log('Sending IDE Config request:', structuredData)

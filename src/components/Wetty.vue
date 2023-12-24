@@ -95,7 +95,7 @@ const deleteWebIDE = async () => {
   const ns = nameSpaceName.value // 적절한 namespace 값을 설정하세요
   const name = userName.value // 사용자 이름을 이름으로 사용
   const ideConfigApiUrl = `${wettyBaseURL}api/ide-configs/custom-resource?namespace=${ns}&name=${name}`
-  const vscodeRouteApiUrl = `${wettyBaseURL}api/route/vscode/${name}`
+  const vscodeRouteApiUrl = `${wettyBaseURL}api/route/vscode?namespace=${ns}&name=${name}`
 
   try {
     await axios.delete(ideConfigApiUrl)
