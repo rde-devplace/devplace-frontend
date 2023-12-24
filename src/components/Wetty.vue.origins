@@ -5,14 +5,13 @@ import { wettyBaseURL } from '../../config'
 
 import CreateWebIDE from './CreateWebIDE.vue' // 새로운 컴포넌트 불러오기
 
-const buttonDisabled = ref(false) // 버튼의 활성화 상태를 저장하기 위한 변수
+const buttonDisabled = ref(true) // 버튼의 활성화 상태를 저장하기 위한 변수
 
 const popupVisible = ref(false) // For showing the popup
 const iframeVisible = ref(false) // For showing the iframe
 const createWebIDEVisible = ref(false) // For showing the createWebIDE
 const endpointURL = ref('') // For showing the endpointURL
 const userName = ref('') // For showing the userName
-const nameSpaceName = ref('kube-pattern') // For showing the nameSpaceName
 const userId = ref('') // For showing the userId
 
 const defaultPath = 'dev'
@@ -79,34 +78,6 @@ const openCreateWebIDEPopup = async () => {
     console.log(endpointURL.value)
   }
   else { alert(`${userName.value}: CLI Terminal이 실행 중인지 확인 바랍니다`) }
-}
-
-// 버튼이 비활성화되었을 때 실행할 함수
-const deleteWebIDE = async () => {
-  // WebIDE 삭제 로직
-  console.log('WebIDE 삭제 로직 실행');
-  userName.value = await fetchUserName()
-  nameSpaceName.value = 'kube-pattern'
-
-  if (!confirm('정말 삭제하시겠습니까?')) {
-    return; // 사용자가 'Cancel'을 선택한 경우
-  }
-
-  const ns = nameSpaceName.value // 적절한 namespace 값을 설정하세요
-  const name = userName.value // 사용자 이름을 이름으로 사용
-  const ideConfigApiUrl = `${wettyBaseURL}api/ide-configs/custom-resource?namespace=${ns}&name=${name}`
-  const vscodeRouteApiUrl = `${wettyBaseURL}api/route/vscode/${name}`
-
-  try {
-    await axios.delete(ideConfigApiUrl)
-    await axios.delete(vscodeRouteApiUrl)
-    alert('삭제가 성공했습니다.')
-    buttonDisabled.value = false
-    // 성공 후 필요한 추가 로직 (예: 상태 업데이트, UI 변경 등)
-  } catch (error) {
-    console.error(error)
-    alert('삭제 중 오류가 발생했습니다.')
-  }
 }
 
 // 버튼의 활성화 상태를 확인하는 함수
@@ -204,12 +175,10 @@ const updateButtonDisabled = (value: boolean) => {
         <!-- Button to open the popup -->
         <!-- 버튼을 수평으로 배열하기 위해 flexbox 사용 -->
         <div class="button-group">
-          <button class="open-popup-button"
-                  :class="{ 'delete-button': buttonDisabled }"
-                  @click="buttonDisabled ? deleteWebIDE() : openCreateWebIDEPopup()">
-            {{ buttonDisabled ? 'WebIDE 삭제' : 'Web IDE 생성' }}
+          <button class="open-popup-button" :disabled="buttonDisabled" @click="openCreateWebIDEPopup">
+            Web IDE 생성
           </button>
-          <button class="open-popup-button" :disabled="!buttonDisabled" @click="openPopup">
+          <button class="open-popup-button" @click="openPopup">
             Web IDE 열기
           </button>
         </div>
@@ -308,11 +277,6 @@ const updateButtonDisabled = (value: boolean) => {
   display: flex;
   align-items: center;
   gap: 10px; /* 두 버튼 사이의 간격 */
-}
-
-.delete-button {
-  background-color: #ff0000; /* 붉은색 배경 */
-  /* 기타 필요한 스타일 */
 }
 
 /* Making the main content scrollable */

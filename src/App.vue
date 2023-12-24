@@ -25,12 +25,18 @@ export default {
     const displayInPopup = ({ htmlContent }: { htmlContent: any }) => {
       const popupWindow = window.open('', 'logout', 'width=600,height=400')
 
-      // 팝업 창이 제대로 열렸는지 확인
       if (popupWindow && popupWindow.document) {
         popupWindow.document.write(htmlContent)
         popupWindow.document.close()
-      }
-      else {
+
+        // 팝업 창이 닫혔는지 확인하는 로직
+        const checkPopupClosed = setInterval(() => {
+          if (popupWindow.closed) {
+            clearInterval(checkPopupClosed)
+            window.location.href = `${wettyBaseURL}console/` // 팝업이 닫히면 URL 변경
+          }
+        }, 1000) // 1초 간격으로 확인
+      } else {
         alert('Popup blocked! Please allow popups for this site and try again.')
       }
     }
@@ -39,9 +45,10 @@ export default {
       try {
         // const response = await axios.post(`${keycloakBaseURL}logout?redirect_uri=${wettyBaseURL}list`)
         const response = await axios.get(`${wettyBaseURL}logout`)
-        if (response.status === 200)
-          displayInPopup({ htmlContent: response.data })
-        else
+        if (response.status === 200) {
+          displayInPopup({htmlContent: response.data})
+          window.location.href = `${wettyBaseURL}console/`
+        } else
           alert('Not Ready Yet - Try Again Later')
       }
       catch (error) {

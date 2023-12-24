@@ -1,7 +1,7 @@
   apiVersion: apps/v1
   kind: Deployment
   metadata:
-    name: frontend-ide
+    name: frontend-ide-deployment
     labels:
       app: frontend-ide
   spec:
@@ -12,13 +12,13 @@
     template:
       metadata:
         annotations: 
-          configmap-version: "2311301707"
+            update: bb6ddad9dd29827dde288fee12d994bb
         labels:
           app: frontend-ide
       spec:
         containers:
-          - name: frontend-ide-container
-            image: amdp-registry.skamdp.org/mydev-ywyi/frontend-ide:1.0
+          - name: frontend-ide
+            image: amdp-registry.skamdp.org/mydev-ywyi/frontend-ide:1.0.0
             imagePullPolicy: Always
 
 

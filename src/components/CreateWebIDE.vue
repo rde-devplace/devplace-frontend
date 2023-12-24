@@ -60,7 +60,7 @@ export default {
     this.ideConfigSpec.userName = this.userName;
   },
   methods: {
-    async submitCreateWebIDE() { // <-- Use async because axios is promise-based
+    async submitCreateWebIDE() {
       this.closePopup()
       const structuredData = {
         ...this.ideConfigSpec,
@@ -74,29 +74,39 @@ export default {
         structuredData.webssh.permission.serviceAccountName = `${name}-ide-account`
       }
 
-      const ideConfigApiUrl = `${wettyURL}api/ideconfig/ide?namespace=${ns}&name=${name}`
-      const vscodeRouteApiUrl = `${wettyURL}api/vscode/route/${name}`
+      const ideConfigApiUrl = `${wettyURL}api/ide-configs/custom-resource?namespace=${ns}&name=${name}`
+      const vscodeRouteApiUrl = `${wettyURL}api/route/vscode/${name}`
 
       try {
+        console.log('Sending IDE Config request:', structuredData)
         const ideConfigResponse = await axios.post(ideConfigApiUrl, structuredData, {
           headers: {
             'Content-Type': 'application/json',
           },
         })
-        const portArray = this.portList.map(item => item.port)
-        const vscodeRouteResponse = await axios.post(vscodeRouteApiUrl, portArray, {
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        })
+        console.log('IDE Config response:', ideConfigResponse.data)
 
-        const dataArray = [ideConfigResponse.data, vscodeRouteResponse.data]
-        const resultPopup = window.open('', 'Result', 'width=600,height=900')
-        resultPopup.document.write(`<pre>${JSON.stringify(dataArray, null, 2)}</pre>`)
-        this.$emit('updateButtonDisabled', true)
+        // 성공일 경우에만 두 번째 요청 실행
+        if (ideConfigResponse.status === 200) {
+          //const portArray = this.portList.map(item => item.port)
+          const portArray = this.ideConfigSpec.portList.map(item => item.port)
+          console.log('Sending VSCode Route request:', portArray)
+          const vscodeRouteResponse = await axios.post(vscodeRouteApiUrl, portArray, {
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          })
+          console.log('VSCode Route response:', vscodeRouteResponse.data)
+
+          const dataArray = [ideConfigResponse.data, vscodeRouteResponse.data]
+          const resultPopup = window.open('', 'Result', 'width=600,height=900')
+          resultPopup.document.write(`<pre>${JSON.stringify(dataArray, null, 2)}</pre>`)
+          this.$emit('updateButtonDisabled', true)
+        }
       }
       catch (error) {
-        alert(`Error: ${vscodeRouteApiUrl.toString()}${error.message}\n\nData:\n${JSON.stringify(structuredData)}`)
+        console.error('Error during the request:', error)
+        alert(`Error: ${error.message}\n\nData:\n${JSON.stringify(structuredData)}`)
       }
       finally {
         this.closePopup()
