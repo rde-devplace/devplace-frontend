@@ -51,7 +51,7 @@ export default {
         replicas: 1 // 레플리카 수
       },
       createWebIDEVisible: true, // 기타 기존 상태들
-      nameSpace: 'kube-pattern',
+      nameSpace: 'part-rde',
     }
   },
   created() {

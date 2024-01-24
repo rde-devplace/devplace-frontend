@@ -12,7 +12,7 @@ const iframeVisible = ref(false) // For showing the iframe
 const createWebIDEVisible = ref(false) // For showing the createWebIDE
 const endpointURL = ref('') // For showing the endpointURL
 const userName = ref('') // For showing the userName
-const nameSpaceName = ref('kube-pattern') // For showing the nameSpaceName
+const nameSpaceName = ref('part-rde') // For showing the nameSpaceName
 const userId = ref('') // For showing the userId
 
 const defaultPath = 'dev'
@@ -86,7 +86,7 @@ const deleteWebIDE = async () => {
   // WebIDE 삭제 로직
   console.log('WebIDE 삭제 로직 실행');
   userName.value = await fetchUserName()
-  nameSpaceName.value = 'kube-pattern'
+  nameSpaceName.value = 'part-rde'
 
   if (!confirm('정말 삭제하시겠습니까?')) {
     return; // 사용자가 'Cancel'을 선택한 경우
@@ -198,65 +198,113 @@ const updateButtonDisabled = (value: boolean) => {
 </script>
 
 <template>
-  <main class="border-t border-gray-200 dark:border-gray-700">
-    <div class="flex flex-row h-full" style=" height: 80vh;">
-      <div id="split-0" class="w-full">
-        <!-- Button to open the popup -->
-        <!-- 버튼을 수평으로 배열하기 위해 flexbox 사용 -->
-        <div class="button-group">
-          <button class="open-popup-button"
-                  :class="{ 'delete-button': buttonDisabled }"
-                  @click="buttonDisabled ? deleteWebIDE() : openCreateWebIDEPopup()">
-            {{ buttonDisabled ? 'WebIDE 삭제' : 'Web IDE 생성' }}
-          </button>
-          <button class="open-popup-button" :disabled="!buttonDisabled" @click="openPopup">
-            Web IDE 열기
-          </button>
-        </div>
-        <!-- 새로운 컴포넌트를 템플릿에 포함 -->
-        <!-- YWYI -->
-        <CreateWebIDE
-            v-if="createWebIDEVisible"
-            :endpoint="endpointURL"
-            :user-name="userName"
-            :user-id="userId"
-            @closePopup="closeCreateWebIDEPopup"
-            @updateButtonDisabled="updateButtonDisabled"
-        />
-        <!--CreateWebIDE
+  <main class="main-container">
+    <div class="workspace-name-display">
+      <input type="text" :value="`workspace:   ws-${nameSpaceName.valueOf()}-${userName.valueOf()}`" disabled size="100" />
+    </div>
+
+    <!-- 이미지 섹션 -->
+    <div class="image-section">
+      <img src="../assets/dev-container.png" alt="Remote Development Environment" />
+      <!--img src="../assets/base-rde-image.jpg" alt="Remote Development Environment" /-->
+    </div>
+
+    <!-- 버튼 및 CreateWebIDE 컴포넌트 섹션 -->
+    <section class="button-and-create-section">
+      <!-- 버튼 그룹 -->
+      <div class="button-group">
+        <button class="open-popup-button"
+                :class="{ 'delete-button': buttonDisabled }"
+                @click="buttonDisabled ? deleteWebIDE() : openCreateWebIDEPopup()">
+          {{ buttonDisabled ? 'WebIDE 삭제' : 'Web IDE 생성' }}
+        </button>
+        <button class="open-popup-button" :disabled="!buttonDisabled" @click="openPopup">
+          Web IDE 열기
+        </button>
+      </div>
+
+      <!-- CreateWebIDE 컴포넌트 -->
+      <CreateWebIDE
           v-if="createWebIDEVisible"
           :endpoint="endpointURL"
           :user-name="userName"
           :user-id="userId"
           @closePopup="closeCreateWebIDEPopup"
-        /-->
-        <!-- Popup for selecting open method -->
-        <div v-if="popupVisible" class="modal">
-          <!-- button @click="openK9S">
-            Open k9s Terminal
-          </button -->
-          <button @click="openCLI">
-            Open CLI Terminal
-          </button>
-          <button @click="openVscode">
-            Open VSCode Developer Environment
-          </button>
-          <button @click="closePopup">
-            닫기
-          </button>
-        </div>
+          @updateButtonDisabled="updateButtonDisabled"
+      />
+    </section>
 
-        <!-- iFrame for the terminal -->
-        <iframe v-if="iframeVisible" class="terminal-iframe" :src="wettyURL" frameborder="0" />
-        <button v-if="iframeVisible" class="iframe-close-button" style="background-color: #007BFF; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-size: 1.1em;" @click="closeIframe">
-          Close Terminal
-        </button>
-      </div>
+    <!-- 팝업 모달 -->
+    <div v-if="popupVisible" class="modal">
+      <button @click="openCLI">
+        Open CLI Terminal
+      </button>
+      <button @click="openVscode">
+        Open VSCode Developer Environment
+      </button>
+      <button @click="closePopup">
+        닫기
+      </button>
     </div>
+
+    <!-- 터미널 iFrame -->
+    <iframe v-if="iframeVisible" class="terminal-iframe" :src="wettyURL" frameborder="0"></iframe>
+    <button v-if="iframeVisible" class="iframe-close-button" @click="closeIframe">
+      Close Terminal
+    </button>
   </main>
 </template>
 
 <style>
+/* 전체 컨테이너 스타일 */
+.main-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.image-section {
+  position: relative; /* 워크스페이스 이름 위치 조정을 위해 relative 설정 */
+  display: block;
+  width: 100%;
+}
+
+/* 이미지 섹션 스타일 */
+.image-section img {
+  width: 100%; /* 이미지가 컨테이너 전체 너비를 채우도록 설정 */
+  height: auto; /* 이미지의 비율을 유지 */
+}
+
+.workspace-name-display {
+  position: absolute;
+  top: 40px; /* 상단에서의 위치 */
+  left: 250px; /* 오른쪽 끝에서의 위치 */
+  transform: translate(0, -100%); /* 요소를 위로 이동 */
+}
+
+.button-group-xx {
+  position: absolute;
+  bottom: 10px; /* 이미지의 하단에서 10px 떨어진 위치에 버튼을 배치 */
+  left: 0; /* 이미지의 왼쪽 정렬 */
+  margin-left: 10px; /* 왼쪽 여백 추가 */
+}
+
+/* 버튼 그룹 스타일 */
+.button-group {
+  display: flex;
+  align-items: center;
+  gap: 10px; /* 두 버튼 사이의 간격 */
+}
+
+/* 버튼 및 CreateWebIDE 섹션 스타일 */
+.button-and-create-section {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 20px; /* 이미지와 버튼 사이의 여백 */
+}
+
 /* ... your existing styles ... */
 
 .modal {
@@ -279,6 +327,7 @@ const updateButtonDisabled = (value: boolean) => {
   right: 10px;
   z-index: 1001;
 }
+
 
 .open-popup-button {
   background-color: #007BFF;
@@ -303,13 +352,6 @@ const updateButtonDisabled = (value: boolean) => {
   transform: none;  /* 축소 효과 제거 */
 }
 
-/* 버튼 그룹 스타일 */
-.button-group {
-  display: flex;
-  align-items: center;
-  gap: 10px; /* 두 버튼 사이의 간격 */
-}
-
 .delete-button {
   background-color: #ff0000; /* 붉은색 배경 */
   /* 기타 필요한 스타일 */
@@ -318,6 +360,15 @@ const updateButtonDisabled = (value: boolean) => {
 /* Making the main content scrollable */
 main {
   overflow-y: auto;
+}
+
+/* iFrame 스타일 */
+.terminal-iframe {
+  /* 기존 iFrame 스타일 */
+}
+
+.iframe-close-button {
+  /* 기존 iFrame 닫기 버튼 스타일 */
 }
 </style>
 

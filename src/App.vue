@@ -83,12 +83,12 @@ export default {
             Digital Workplace
           </router-link>
         </li>
-        <li>
+        <!--li>
           <router-link to="/kube">
             <img src="@/assets/kubernetes.256x249.svg" class="menu-icon">
             Kubernetes
           </router-link>
-        </li>
+        </li-->
       </ul>
     </div>
     <div class="content">
