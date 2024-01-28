@@ -69,107 +69,166 @@ export default {
 
 <template>
   <div id="app" class="app-container">
-    <div class="sidebar">
-      <!-- 제목 표시 -->
-      <button @click="logout">
-        {{ username || 'login' }}
-      </button> <!-- 로그인된 사용자 이름 표시 및 클릭 이벤트 바인딩 -->
-      <!-- 구분선 추가 -->
-      <div class="divider" />
-      <ul>
-        <li>
-          <router-link to="/">
-            <img src="@/assets/terminal-svgrepo-com.svg" alt="Terminal Icon" class="menu-icon">
-            Digital Workplace
-          </router-link>
-        </li>
-        <!--li>
-          <router-link to="/kube">
-            <img src="@/assets/kubernetes.256x249.svg" class="menu-icon">
-            Kubernetes
-          </router-link>
-        </li-->
-      </ul>
+    <div class="top-bar">
+      <div class="logo">
+        <!-- Insert your logo here -->
+        <img src="@/assets/dev.svg" alt="DEVPlace Logo">
+        <span>DEVPlace</span>
+      </div>
+      <!-- Logout button container on the right side of the top bar -->
+      <div class="logout-container">
+        <button class="logout-button" @click="logout">
+          {{ username || 'login' }}
+        </button>
+      </div>
     </div>
-    <div class="content">
-      <router-view />
+    <!-- Horizontal flex container for sidebar and content -->
+    <div class="horizontal-flex-container">
+      <div class="sidebar">
+        <ul>
+          <li>
+            <router-link to="/">
+              <div class="logo">
+                <!--img src="@/assets/terminal-svgrepo-com.svg" alt="Terminal Icon" class="menu-icon"-->
+                <img src="@/assets/terminal-svgrepo-com.svg" alt="Terminal Icon">
+              <span>개인 개발환경</span>
+              </div>
+            </router-link>
+          </li>
+        </ul>
+      </div>
+      <div class="content">
+        <router-view />
+      </div>
     </div>
   </div>
 </template>
 
 <style>
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap');
+
 .app-container {
   display: flex;
+  flex-direction: column; /* Stack top-bar and the horizontal flex-container */
   height: 100vh;
 }
 
-.sidebar-header {
-  color: #fff; /* 텍스트를 흰색으로 설정 */
-  background-color: #007BFF; /* 배경색을 파란색으로 설정 */
-  padding: 10px; /* 패딩을 추가하여 텍스트 주위에 공간을 만듭니다 */
-  font-size: 1.5em;
-  margin-bottom: 10px;
+/* Horizontal container for sidebar and content */
+.horizontal-flex-container {
+  display: flex;
+  flex-direction: row;
+  height: calc(100vh - 60px); /* Subtract the height of the top-bar */
+}
+
+.top-bar {
+  width: 100%;
+  height: 60px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px;
+  background-color: #232d35; /* Match with the sidebar */
+  font-size: 17px;
+  font-family: 'Roboto', sans-serif;
+  color: #fff;
+}
+
+.sidebar {
+  width: 270px; /* 사이드바의 너비를 270픽셀로 설정 */
+  height: 100%; /* 사이드바의 높이를 부모 요소의 100%로 설정하여 전체 높이를 차지하도록 함 */
+  background-color: #232d35; /* 사이드바의 배경색을 어두운 회색/푸른색으로 설정 */
+  padding: 10px; /* 사이드바 내부의 모든 내용에 대해 상하좌우로 10픽셀의 여백을 설정 */
+  box-shadow: 2px 0px 5px rgba(0, 0, 0, 0.1); /* 사이드바에 그림자 효과를 주어 입체감을 더함 */
+  display: flex; /* 플렉스박스 레이아웃을 사용하여 내부 요소를 배치함 */
+  flex-direction: column; /* 플렉스박스 내부의 요소들이 세로 방향으로 쌓이도록 함 */
+  vertical-align: middle; /* 세로 정렬을 중앙으로 설정, flexbox에서는 사용되지 않는 속성 */
+  font-size: 13px; /* 사이드바 내부 텍스트의 폰트 크기를 13픽셀로 설정 */
+  font-family: 'Roboto', sans-serif; /* 폰트 스타일을 'Roboto'로 설정, 해당 폰트가 없을 경우 기본 산세리프 폰트 사용 */
+  //align-items: flex-start; /* 플렉스 아이템들을 시작점(왼쪽)에 정렬 */
+}
+
+.sidebar ul {
+  list-style: none; /* 목록의 기본 스타일(점 등)을 제거 */
+  padding: 0; /* 목록 내부에 상하좌우 여백을 없앰 */
+}
+
+.sidebar li {
+  margin-bottom: 10px; /* 각 목록 항목 아래에 10픽셀의 여백을 설정하여 간격을 둠 */
+  display: flex; /* 플렉스박스 레이아웃을 사용하여 내부 요소를 배치 */
+  align-items: center; /* 목록 항목 내부의 요소들을 중앙에 정렬 */
+}
+
+
+.sidebar a {
+  color: #fff; /* 링크의 텍스트 색상을 흰색으로 설정 */
+  text-decoration: none; /* 링크의 밑줄을 제거 */
+  font-weight: bold; /* 링크 텍스트를 굵게 표시 */
+}
+
+.sidebar a:hover {
+  text-decoration: underline; /* 마우스를 올렸을 때 링크 텍스트에 밑줄을 추가 */
+  color: blue; /* 마우스를 올렸을 때 링크 텍스트 색상을 노란색으로 변경 */
+}
+
+.content {
+  //flex: 1; /* flex-grow를 1로 설정, 사용 가능한 공간을 차지하도록 함 */
+  //margin-top: 20px; /* 상단 여백 */
+  overflow: hidden;
+  //overflow: auto; /* 내용이 넘치면 스크롤바가 생기도록 설정 */
+  //padding: 30px; /* 내부 패딩 */
+  align-items: center; /* 내용을 수직으로 중앙에 정렬 */
+
+  /* 최소 너비를 설정하여 내용이 너무 작아지는 것을 방지 */
+  min-width: 0; /* 또는 콘텐츠에 따라 적절한 최소 너비를 설정할 수 있습니다. */
+  max-width: 100%; /* 최대 너비를 설정하여 내용이 너무 커지는 것을 방지 */
+  width: 100%; /* 너비를 부모 컨테이너에 맞춤 */
+  height: auto; /* 높이를 자동으로 설정하여 내용의 비율을 유지 */
+}
+
+.logo {
+  display: flex;
+  align-items: center;
   font-weight: bold;
-  border-radius: 4px; /* 모서리를 둥글게 합니다 */
+  font-size: 1.5em;
+}
+
+.logo img {
+  height: 30px; /* Adjust size as needed */
+  margin-right: 10px;
+}
+
+.logout-container {
+  order: 2; /* Ensures the container is positioned to the right */
+}
+
+.account-info button {
+  background: none;
+  border: none;
+  color: #fff;
+  cursor: pointer;
+  font-size: 1em;
+}
+
+/* 로그아웃 버튼에 적용될 스타일 */
+.logout-button {
+  background-color: #232d35; /* 버튼 색깔 */
+  color: #fff; /* 텍스트 색깔 */
+  border: none; /* 테두리 없음 */
+  padding: 10px; /* 패딩 값 */
+  text-align: left; /* 텍스트 왼쪽 정렬 */
+  font-size: 17px; /* 폰트 크기 */
+  cursor: pointer; /* 커서 포인터 */
+  width: 100%; /* 너비를 부모 컨테이너에 맞춤 */
+  box-sizing: border-box; /* 패딩과 테두리가 너비에 포함되도록 설정 */
 }
 
 /* 구분선 스타일 */
 .divider {
-  height: 2px; /* 선 두께 */
-  background-color: #fff; /* 선 색상 */
-  margin-bottom: 20px; /* 메뉴와의 간격 */
+  height: 2px; /* 높이 */
+  background-color: #fff; /* 색상 */
+  margin: 20px 0; /* 상하 여백 */
 }
 
-.sidebar {
-  width: 200px;
-  height: 100%;
-  background-color: #000;
-  padding: 10px;
-  box-shadow: 2px 0px 5px rgba(0, 0, 0, 0.1);
-  /* 추가: flexbox 속성 */
-  display: flex;
-  flex-direction: column;
-  vertical-align: middle;
-  /* align-items: flex-start; */
-}
 
-.sidebar ul {
-  list-style: none;
-  padding: 0;
-}
-
-.sidebar li {
-  margin-bottom: 10px;
-  display: flex;
-  align-items: center;
-}
-
-.sidebar a {
-  color: #fff; /* 메뉴 텍스트를 흰색으로 변경 */
-  text-decoration: none;
-  font-weight: bold;
-}
-
-.sidebar a:hover {
-  text-decoration: underline;
-  color: yellow;
-}
-
-.content {
-  flex: 1;
-  margin-top: 20px;
-  overflow: auto;
-  /* margin-left: 200px; */
-  padding: 30px;
-}
-
-/* 메뉴 아이콘 스타일 */
-.menu-icon {
-  height: 18px;    /* 아이콘의 높이를 조절하고 */
-  width: auto;     /* 가로 세로 비율을 유지 */
-  margin-right: 5px; /* 텍스트와의 간격 */
-  display: inline-block; /* 이미지와 Text를 한 라인으로 */
-  vertical-align: middle; /* 이미지와 텍스트를 수직 중앙 정렬 */
-}
 </style>
 

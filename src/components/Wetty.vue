@@ -115,6 +115,7 @@ const checkVscodeAvailability = async () => {
   const vscodeEndpoint = `${wettyBaseURL}${checkName}/vscode/`
 
   try {
+    userName.value = checkName
     const response = await axios.get(vscodeEndpoint)
     if (response.status === 200)
       buttonDisabled.value = true
@@ -199,18 +200,16 @@ const updateButtonDisabled = (value: boolean) => {
 
 <template>
   <main class="main-container">
-    <div class="workspace-name-display">
-      <input type="text" :value="`workspace:   ws-${nameSpaceName.valueOf()}-${userName.valueOf()}`" disabled size="100" />
-    </div>
-
-    <!-- 이미지 섹션 -->
-    <div class="image-section">
-      <img src="../assets/dev-container.png" alt="Remote Development Environment" />
-      <!--img src="../assets/base-rde-image.jpg" alt="Remote Development Environment" /-->
-    </div>
-
-    <!-- 버튼 및 CreateWebIDE 컴포넌트 섹션 -->
-    <section class="button-and-create-section">
+    <div class="content">
+      <div class="workspace-header">
+        <input type="text" :value="`workspace / devplace.local.${nameSpaceName.valueOf()}.${userName.valueOf()}`" disabled size="200" class="workspace-name"/>
+      </div>
+        <!-- 이미지 섹션 -->
+      <div class="image-section">
+        <!--img src="../assets/dev-container.png" alt="Remote Development Environment" /-->
+        <img src="../assets/start-base.png" alt="Remote Development Environment" class="responsive" />
+      </div>
+    <!--/div-->
       <!-- 버튼 그룹 -->
       <div class="button-group">
         <button class="open-popup-button"
@@ -222,18 +221,21 @@ const updateButtonDisabled = (value: boolean) => {
           Web IDE 열기
         </button>
       </div>
+    </div>
 
-      <!-- CreateWebIDE 컴포넌트 -->
-      <CreateWebIDE
+
+    <!-- 버튼 및 CreateWebIDE 컴포넌트 섹션 -->
+    <section class="button-and-create-section">
+        <!-- CreateWebIDE 컴포넌트 -->
+        <CreateWebIDE
           v-if="createWebIDEVisible"
           :endpoint="endpointURL"
           :user-name="userName"
           :user-id="userId"
           @closePopup="closeCreateWebIDEPopup"
           @updateButtonDisabled="updateButtonDisabled"
-      />
+        />
     </section>
-
     <!-- 팝업 모달 -->
     <div v-if="popupVisible" class="modal">
       <button @click="openCLI">
@@ -246,63 +248,87 @@ const updateButtonDisabled = (value: boolean) => {
         닫기
       </button>
     </div>
-
-    <!-- 터미널 iFrame -->
-    <iframe v-if="iframeVisible" class="terminal-iframe" :src="wettyURL" frameborder="0"></iframe>
-    <button v-if="iframeVisible" class="iframe-close-button" @click="closeIframe">
-      Close Terminal
-    </button>
   </main>
 </template>
 
 <style>
 /* 전체 컨테이너 스타일 */
 .main-container {
-  display: flex;
+  max-width: 100%;
+  width: 100%;
+  height: auto;
   flex-direction: column;
   align-items: center;
+  margin-left: 20px;
+  margin-right: 20px;
+}
+
+.content {
+  //flex: 1;
+  //padding: 30px;
+  align-items: center;
+  //flex-direction: column;
+  max-width: 100%;
+  width: 100%;
+  height: auto;
+}
+
+.workspace-header {
+  width: 100%;
+  background-color: #f8f9fa; /* or any color you prefer */
+  padding: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid #e1e4e8; /* for the separator line */
+}
+
+.workspace-name {
+  font-weight: bold;
+  font-size: 1.2em;
+  font-family: 'Roboto', sans-serif;
+  /* Add more styling if needed */
 }
 
 .image-section {
   position: relative; /* 워크스페이스 이름 위치 조정을 위해 relative 설정 */
-  display: block;
+  //display: block;
+  display: flex;
   width: 100%;
+  margin: auto;
 }
 
 /* 이미지 섹션 스타일 */
 .image-section img {
-  width: 100%; /* 이미지가 컨테이너 전체 너비를 채우도록 설정 */
+  max-width: 90%; /* 이미지가 부모 컨테이너 너비를 넘지 않도록 설정 */
+  width: 90%; /* 이미지가 컨테이너 전체 너비를 채우도록 설정 */
   height: auto; /* 이미지의 비율을 유지 */
 }
 
-.workspace-name-display {
-  position: absolute;
-  top: 40px; /* 상단에서의 위치 */
-  left: 250px; /* 오른쪽 끝에서의 위치 */
-  transform: translate(0, -100%); /* 요소를 위로 이동 */
+img.responsive {
+  max-width: 100%; /* 이미지의 최대 너비를 부모 요소의 100%로 제한합니다. */
+  width: 100%; /* 이미지의 너비를 부모 요소의 100%로 설정합니다. */
+  height: auto; /* 이미지의 높이를 자동으로 설정하여 비율을 유지합니다. */
+  display: block; /* 이미지를 블록 레벨 요소로 만들어 줄 바꿈을 추가합니다. */
 }
 
-.button-group-xx {
-  position: absolute;
-  bottom: 10px; /* 이미지의 하단에서 10px 떨어진 위치에 버튼을 배치 */
-  left: 0; /* 이미지의 왼쪽 정렬 */
-  margin-left: 10px; /* 왼쪽 여백 추가 */
-}
 
 /* 버튼 그룹 스타일 */
 .button-group {
   display: flex;
   align-items: center;
-  gap: 10px; /* 두 버튼 사이의 간격 */
+  gap: 20px; /* 두 버튼 사이의 간격 */
+  margin-top: 40px; /* 이미지와 버튼 사이의 간격 추가 */
 }
 
 /* 버튼 및 CreateWebIDE 섹션 스타일 */
 .button-and-create-section {
+  max-width: 100%;
   width: 100%;
-  display: flex;
+  //display: flex;
   flex-direction: column;
   align-items: center;
-  margin-top: 20px; /* 이미지와 버튼 사이의 여백 */
+  margin-top: 15px; /* 이미지와 버튼 사이의 여백 */
 }
 
 /* ... your existing styles ... */
@@ -321,14 +347,6 @@ const updateButtonDisabled = (value: boolean) => {
   gap: 8px;
 }
 
-.iframe-close-button {
-  position: fixed;
-  bottom: 10px;
-  right: 10px;
-  z-index: 1001;
-}
-
-
 .open-popup-button {
   background-color: #007BFF;
   color: white;
@@ -336,7 +354,11 @@ const updateButtonDisabled = (value: boolean) => {
   padding: 10px 20px;
   border-radius: 4px;
   cursor: pointer;
-  font-size: 1.1em;
+  font-size: 1.7em;
+}
+
+.open-popup-button, .delete-button {
+  padding: 20px 30px; /* Increase button size */
 }
 
 .open-popup-button:active {
@@ -360,15 +382,6 @@ const updateButtonDisabled = (value: boolean) => {
 /* Making the main content scrollable */
 main {
   overflow-y: auto;
-}
-
-/* iFrame 스타일 */
-.terminal-iframe {
-  /* 기존 iFrame 스타일 */
-}
-
-.iframe-close-button {
-  /* 기존 iFrame 닫기 버튼 스타일 */
 }
 </style>
 
