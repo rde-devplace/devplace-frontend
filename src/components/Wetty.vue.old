@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch, onUnmounted } from 'vue'
 import axios from 'axios'
 import { wettyBaseURL } from '../../config'
 
@@ -14,10 +14,13 @@ const endpointURL = ref('') // For showing the endpointURL
 const userName = ref('') // For showing the userName
 const nameSpaceName = ref('part-rde') // For showing the nameSpaceName
 const userId = ref('') // For showing the userId
+const isLoading = ref(false) // 로딩 상태를 나타내는 변수 추가
 
 const defaultPath = 'dev'
 const wettyURL = `${wettyBaseURL}${defaultPath}`
 const k9sURL = `${wettyURL}/k9/wetty`
+
+let timerId: number | null = null;  // 타이머 ID를 저장할 변수
 
 const openPopup = () => {
   popupVisible.value = true
@@ -64,6 +67,7 @@ const fetchUserId = async () => {
 }
 
 const openCreateWebIDEPopup = async () => {
+  isLoading.value = true; // 로딩 시작
   // you had comment out the following two lines to test the code
   userName.value = await fetchUserName()
   userId.value = await fetchUserId()
@@ -76,6 +80,7 @@ const openCreateWebIDEPopup = async () => {
     endpointURL.value = `${wettyBaseURL}${userName.value}/`
     createWebIDEVisible.value = true
     // eslint-disable-next-line no-console
+    isLoading.value = false; // 로딩 종료
     console.log(endpointURL.value)
   }
   else { alert(`${userName.value}: CLI Terminal이 실행 중인지 확인 바랍니다`) }
@@ -196,6 +201,8 @@ const closeIframe = () => {
 const updateButtonDisabled = (value: boolean) => {
   buttonDisabled.value = value
 }
+
+
 </script>
 
 <template>
@@ -209,6 +216,12 @@ const updateButtonDisabled = (value: boolean) => {
         <!--img src="../assets/dev-container.png" alt="Remote Development Environment" /-->
         <img src="../assets/start-base.png" alt="Remote Development Environment" class="responsive" />
       </div>
+
+      <!-- 로딩 이미지 -->
+      <div v-if="isLoading" class="loading-container">
+        <img src="../assets/loading.gif" alt="Loading" />
+      </div>
+
     <!--/div-->
       <!-- 버튼 그룹 -->
       <div class="button-group">
@@ -382,6 +395,15 @@ img.responsive {
 /* Making the main content scrollable */
 main {
   overflow-y: auto;
+}
+
+/* 로딩 컨테이너 스타일 */
+.loading-container {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 1001; /* 모달보다 높은 z-index */
 }
 </style>
 

@@ -10,6 +10,11 @@ export default {
 
     const fetchUserName = async () => {
       try {
+        if (import.meta.env.VITE_APP_RUNNING_LOCAL === 'true') {
+          // 로컬 실행 환경일 때
+          username.value = 'testName'
+          return
+        }
         const response = await axios.get(`${wettyBaseURL}user/name`)
         if (response.status === 200 && response.data)
           username.value = response.data

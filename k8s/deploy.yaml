@@ -12,7 +12,7 @@
     template:
       metadata:
         annotations: 
-            update: 6531bec7fd66ab08c18ab680de02157f
+            update: 3e235a5041e72660e93caad8bb6f7cb3
         labels:
           app: frontend-ide
       spec:

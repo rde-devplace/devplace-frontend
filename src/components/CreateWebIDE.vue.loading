@@ -77,12 +77,11 @@ export default {
         structuredData.webssh.permission.serviceAccountName = `${name}-ide-account`
       }
 
+
       const ideConfigApiUrl = `${wettyURL}api/ide-configs/custom-resource?namespace=${ns}&name=${name}`
       const vscodeRouteApiUrl = `${wettyURL}api/route/vscode?namespace=${ns}&name=${name}`
 
-
       try {
-
         console.log('Sending IDE Config request:', structuredData)
         const ideConfigResponse = await axios.post(ideConfigApiUrl, structuredData, {
           headers: {
@@ -96,6 +95,9 @@ export default {
           //const portArray = this.portList.map(item => item.port)
           const portArray = this.ideConfigSpec.portList.map(item => item.port)
           console.log('Sending VSCode Route request:', portArray)
+
+          this.$emit('updateButtonDisabled', true)
+          // Wetty.vue에 IDE 생성 성공 이벤트 전송
 
           const vscodeRouteResponse = await axios.post(vscodeRouteApiUrl, portArray, {
             headers: {
@@ -111,23 +113,29 @@ export default {
             successCreate.value = false
           }
 
-
           const dataArray = [ideConfigResponse.data, vscodeRouteResponse.data]
           const resultPopup = window.open('', 'Result', 'width=600,height=900')
           resultPopup.document.write(`<pre>${JSON.stringify(dataArray, null, 2)}</pre>`)
-
         }
-      } catch (error) {
-        console.log('Error during the request:', error)
+      }
+      catch (error) {
+        console.error('Error during the request:', error)
         //alert(`Error: ${error.message}\n\nData:\n${JSON.stringify(structuredData)}`)
       }
-
+      finally {
+        if(successCreate.value === true) {
+          this.$emit('success', true)
+          console.log("ideCreationSuccess emit success")
+        }
+        else {
+          this.$emit('success', false)
+          console.log("ideCreationSuccess emit failed")
+        }
+        this.closePopup()
+      }
     },
     closePopup() {
-
       this.$emit('closePopup') // Wetty.vue로 이벤트 전송
-      this.$emit('success', true)
-      this.$emit('updateButtonDisabled', true)
     },
   },
 }

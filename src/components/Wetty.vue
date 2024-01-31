@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { onMounted, ref } from 'vue'
 import axios from 'axios'
 import { wettyBaseURL } from '../../config'
 
@@ -14,6 +14,8 @@ const endpointURL = ref('') // For showing the endpointURL
 const userName = ref('') // For showing the userName
 const nameSpaceName = ref('part-rde') // For showing the nameSpaceName
 const userId = ref('') // For showing the userId
+
+const loading = ref(false) // 로딩 상태를 관리하는 변수
 
 const defaultPath = 'dev'
 const wettyURL = `${wettyBaseURL}${defaultPath}`
@@ -33,6 +35,10 @@ const closeCreateWebIDEPopup = () => {
 
 const fetchUserName = async () => {
   try {
+    if (import.meta.env.VITE_APP_RUNNING_LOCAL === 'true') {
+      // 로컬 실행 환경일 때
+      return 'testName'
+    }
     const response = await axios.get(`${wettyBaseURL}user/name`)
     if (response.status === 200 && response.data) { return response.data }
     else {
@@ -49,6 +55,10 @@ const fetchUserName = async () => {
 
 const fetchUserId = async () => {
   try {
+    if (import.meta.env.VITE_APP_RUNNING_LOCAL === 'true') {
+      // 로컬 실행 환경일 때
+      return '1111111111'
+    }
     const response = await axios.get(`${wettyBaseURL}user/id`)
     if (response.status === 200 && response.data) { return response.data }
     else {
@@ -57,20 +67,23 @@ const fetchUserId = async () => {
     }
   }
   catch (error) {
-    console.error(error)
+    console.log(error)
     alert('An error occurred while fetching the user ID.') // 수정된 부분
     return null
   }
 }
 
 const openCreateWebIDEPopup = async () => {
-  // you had comment out the following two lines to test the code
-  userName.value = await fetchUserName()
-  userId.value = await fetchUserId()
-  // test code YWYI
-  // userName.value = 'himang10'
-  // userId.value = 'xxxxxxxxxxxx'
-  // eslint-disable-next-line no-console
+  if (import.meta.env.VITE_RUNNING_LOCAL === 'true') {
+    // 로컬 실행 환경일 때
+    userName.value = 'testName';
+    userId.value = 'xxxxxxxxxxxx';
+  } else {
+    // Docker 배포 환경일 때
+    userName.value = await fetchUserName();
+    userId.value = await fetchUserId();
+  }
+
   console.log(userName)
   if (userName.value) {
     endpointURL.value = `${wettyBaseURL}${userName.value}/`
@@ -104,28 +117,50 @@ const deleteWebIDE = async () => {
     buttonDisabled.value = false
     // 성공 후 필요한 추가 로직 (예: 상태 업데이트, UI 변경 등)
   } catch (error) {
-    console.error(error)
+    console.log(error)
     alert('삭제 중 오류가 발생했습니다.')
   }
 }
 
 // 버튼의 활성화 상태를 확인하는 함수
 const checkVscodeAvailability = async () => {
+  console.log('checkVscodeAvailability: buttonDisabled: ' + buttonDisabled.value + ' / loading: ' + loading.value)
   const checkName = await fetchUserName()
   const vscodeEndpoint = `${wettyBaseURL}${checkName}/vscode/`
 
-  try {
-    userName.value = checkName
-    const response = await axios.get(vscodeEndpoint)
-    if (response.status === 200)
-      buttonDisabled.value = true
-    else
-      buttonDisabled.value = false
+  userName.value = checkName
+  const response = await axios.get(vscodeEndpoint)
+  if (response.status === 200) {
+    buttonDisabled.value = true
+    loading.value = false
+    console.log('checkVscodeAvailability:axios.get() 200 OK  buttonDisabled: ' + buttonDisabled.value + ' / loading: ' + loading.value)
   }
-  catch (error) {
+  else {
+    console.log('사용자 환경 생성중입니다')
     buttonDisabled.value = false
   }
 }
+
+const handleIdeCreationSuccess = () => {
+  console.log('handleIdeCreationSuccess: buttonDisabled: ' + buttonDisabled.value + ' / loading: ' + loading.value);
+  loading.value = true; // IDE 생성 성공시 로딩 시작
+  let timeoutId: number | undefined;
+
+  const interval = setInterval(async () => {
+    await checkVscodeAvailability();
+    if (buttonDisabled.value) {
+      clearInterval(interval);
+      clearTimeout(timeoutId); // 버튼 활성화시 타임아웃 취소
+    }
+  }, 1000); // 1초마다 확인
+
+  // 3분 후 타임아웃 설정
+  timeoutId = setTimeout(() => {
+    clearInterval(interval); // 인터벌 정지
+    loading.value = false; // 로딩 상태 비활성화
+    alert('타임아웃: 개발 환경 구성이 지연되고 있습니다. 문제가 지속되면 관리자에게 문의하세요.');
+  }, 180000); // 180초(3분) 후 타임아웃
+};
 
 onMounted(async () => {
   checkVscodeAvailability()
@@ -194,6 +229,7 @@ const closeIframe = () => {
 }
 
 const updateButtonDisabled = (value: boolean) => {
+  console.log('updateButtonDisabled: ' + value)
   buttonDisabled.value = value
 }
 </script>
@@ -201,6 +237,8 @@ const updateButtonDisabled = (value: boolean) => {
 <template>
   <main class="main-container">
     <div class="content">
+      <!-- 로딩 이미지 -->
+      <img v-if="loading" src="../assets/loading.gif" alt="Loading..." class="loading-image" />
       <div class="workspace-header">
         <input type="text" :value="`workspace / devplace.local.${nameSpaceName.valueOf()}.${userName.valueOf()}`" disabled size="200" class="workspace-name"/>
       </div>
@@ -214,6 +252,7 @@ const updateButtonDisabled = (value: boolean) => {
       <div class="button-group">
         <button class="open-popup-button"
                 :class="{ 'delete-button': buttonDisabled }"
+                :disabled="loading"
                 @click="buttonDisabled ? deleteWebIDE() : openCreateWebIDEPopup()">
           {{ buttonDisabled ? 'WebIDE 삭제' : 'Web IDE 생성' }}
         </button>
@@ -226,15 +265,16 @@ const updateButtonDisabled = (value: boolean) => {
 
     <!-- 버튼 및 CreateWebIDE 컴포넌트 섹션 -->
     <section class="button-and-create-section">
-        <!-- CreateWebIDE 컴포넌트 -->
-        <CreateWebIDE
+      <!-- CreateWebIDE 컴포넌트 -->
+      <CreateWebIDE
           v-if="createWebIDEVisible"
           :endpoint="endpointURL"
           :user-name="userName"
           :user-id="userId"
-          @closePopup="closeCreateWebIDEPopup"
-          @updateButtonDisabled="updateButtonDisabled"
-        />
+          @success="handleIdeCreationSuccess"
+          @close-popup="closeCreateWebIDEPopup"
+          @update-button-disabled="updateButtonDisabled"
+      />
     </section>
     <!-- 팝업 모달 -->
     <div v-if="popupVisible" class="modal">
@@ -377,6 +417,13 @@ img.responsive {
 .delete-button {
   background-color: #ff0000; /* 붉은색 배경 */
   /* 기타 필요한 스타일 */
+}
+.loading-image {
+  position: absolute; /* 절대 위치 설정 */
+  top: 50%; /* 상단에서 50% 위치 */
+  left: 50%; /* 좌측에서 50% 위치 */
+  transform: translate(-50%, -50%); /* 중앙 정렬 */
+  z-index: 10; /* 다른 요소 위에 위치하도록 z-index 설정 */
 }
 
 /* Making the main content scrollable */
