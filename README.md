@@ -51,7 +51,30 @@ RDE는 완전히 에어 갭이 적용되어 소스 코드가 개발자의 컴퓨
 
 ## 구성 컴포넌트
 운영을 위한 컴포넌트는 다음과 같습니다.
-### Proxy Manager 
+
+### devplace-frontend
+DevPlace의 사용자 인터페이스를 제공하는 Vue 3.0 기반의 Frontend 서비스입니다.
+![DevPlace Frontend](./images/devplace-frontend.png)
+
+
+### devplace-proxy
+DevPlace의 API Gateway 역할을 수행하는 spring cloud gateway 기반의 Proxy 서비스입니다.
+proxy 서비스는 3가지 유형으로 지원하고 있습니다. 
+1. #### session-gateway
+keycloak 기반의 oauth2 client 구조로 client가 gateway를 통해 직접 로그인을 수행하며, 발급받은 토큰은 gateway 내부에서 저장관리합니다.
+대신 Client는 Session Coooie를 통해 gateway에 접근할 수 있습니다. 
+세션 정보는 mariaDB로 잔체적으로 관리하고 있습니다. 
+이것은 자체적인 로그인 및 인증 처리를 수행하고자 할때 유용합니다. 
+또한 동적으로 생성되는 개발 환경 컨테이너로 라우팅을 위해 mariadb에 routing 정보를 동적으로 저장 관리하고 있습니다. 
+2. #### api-gateway-mariadb
+keycloak 기반의 ouath2 resource server 구조로 별도 세션 정보를 저장 관리하고 있지 않으며, Client는 Keycloak을 통해  발급 받은 토큰을 관리하고 있어야 합니다.
+라우팅 정보 관리는 session-gateway 와 동일합니다. 
+
+4. #### api-gateway-stateless
+기본 동작 기능은 api-gateway-mariadb와 동일합니다. 
+대신 별도의 동적 라우팅을 위한 DB를 관리하지 않고 gateway 내부에서 로직적으로 라우팅 정보를 생성 및 라우팅합니다. 
+이것은 gateway 설치 영역을 최소화할 수 있도록 합니다. 
+
 
 ### Ide Manager
 
@@ -82,3 +105,4 @@ RDE를 사용하기 위해서는 다음 링크의 소스 코드를 설치 및 �
 DevPlace에 대한 사용에 대한 질문이나 Cloud Native Application 과 Microservice 전환에 대한 질문은 다음 메일로 문의 주시기 바랍니다.
 
 # License
+- TEST

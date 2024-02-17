@@ -256,7 +256,9 @@ const updateButtonDisabled = (value: boolean) => {
                 @click="buttonDisabled ? deleteWebIDE() : openCreateWebIDEPopup()">
           {{ buttonDisabled ? 'WebIDE 삭제' : 'Web IDE 생성' }}
         </button>
-        <button class="open-popup-button" :disabled="!buttonDisabled" @click="openPopup">
+        <button class="open-popup-button"
+                :disabled="!buttonDisabled || loading"
+                @click="openPopup">
           Web IDE 열기
         </button>
       </div>
