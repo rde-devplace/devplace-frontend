@@ -23,3 +23,6 @@ yarn-error.log*
 
 # npm
 package-lock.json
+
+env.properties
+*.yaml
