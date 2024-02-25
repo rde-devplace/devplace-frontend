@@ -54,18 +54,32 @@ RDE는 완전히 에어 갭이 적용되어 소스 코드가 개발자의 컴퓨
 
 ### devplace-frontend
 DevPlace의 사용자 인터페이스를 제공하는 Vue 3.0 기반의 Frontend 서비스입니다.
-![DevPlace Frontend](./images/devplace-frontend.png)
+
+아래 화면은 DevPlace의 Frontend 서비스를 통해 제공되는 화면입니다.
+![DevPlace Frontend](docs/images/devplace.png)
+
+WebIDE 열기 버튼을 클릭하는 경우 2가지 기능을 제공합니다.
+첫번째는 Open VSCode Developer Environment를 클릭할때 뜨는 화면입니다. 
+
+![DevPlace vscode](docs/images/vscode.png)
+
+두번째는 Open CLI Terminal을 클릭할때 뜨는 화면입니다.
+
+![DevPlace sshserver](docs/images/sshserver.png)
 
 
 ### devplace-proxy
 DevPlace의 API Gateway 역할을 수행하는 spring cloud gateway 기반의 Proxy 서비스입니다.
 proxy 서비스는 3가지 유형으로 지원하고 있습니다. 
+[GitHub Repository](https://github.com/rde-devplace/devplace-proxy)
+
 1. #### session-gateway
 keycloak 기반의 oauth2 client 구조로 client가 gateway를 통해 직접 로그인을 수행하며, 발급받은 토큰은 gateway 내부에서 저장관리합니다.
 대신 Client는 Session Coooie를 통해 gateway에 접근할 수 있습니다. 
 세션 정보는 mariaDB로 잔체적으로 관리하고 있습니다. 
 이것은 자체적인 로그인 및 인증 처리를 수행하고자 할때 유용합니다. 
 또한 동적으로 생성되는 개발 환경 컨테이너로 라우팅을 위해 mariadb에 routing 정보를 동적으로 저장 관리하고 있습니다. 
+
 2. #### api-gateway-mariadb
 keycloak 기반의 ouath2 resource server 구조로 별도 세션 정보를 저장 관리하고 있지 않으며, Client는 Keycloak을 통해  발급 받은 토큰을 관리하고 있어야 합니다.
 라우팅 정보 관리는 session-gateway 와 동일합니다. 
@@ -77,12 +91,20 @@ keycloak 기반의 ouath2 resource server 구조로 별도 세션 정보를 저�
 
 
 ### Ide Manager
+이 컴포넌트는 Devplace 환경을 관리하는 컴포넌트입니다.
+[GitHub Repository](https://github.com/rde-devplace/devplace-manager)
 
 ### Ide Operator
+이 컴포넌트는 WebIDE와 SSH Server를 생성 및 관리하는 컴포넌트입니다.
+[GitHub Repository](https://github.com/rde-devplace/devplace-operator)
 
-### Ide Init Server
+### webIdeCode
+이 컴포넌트는 VSCODE 기반의 Web IDE, Jupyter Notebook, 그리고 이것을 초기화 하기 위한 Init Code를 제공합니다.
+[GitHub Repository](https://github.com/rde-devplace/webIdeCode)
 
-### IDE User Server 
+### sshserver
+이 컴포넌트는 SSHServer 기반의 Kubectl CLI를 제공합니다.
+[GitHub Repository](https://github.com/rde-devplace/sshserver)
 
 ## 제약 사항
 현재 제공하는 DevPlace는 Multi-Cluster 를 지원하고 있지 않으며, 계정별 한개의 Workspaced와 한개의 Pod 환경을 제공합니다. 
@@ -90,7 +112,17 @@ keycloak 기반의 ouath2 resource server 구조로 별도 세션 정보를 저�
 옐들들어, VSCODE Server, SSH Server 를 선택하는 경우 2개의 컨테이너가 함께 포함된 Pod 가 생성됩니다. 
 
 ## 생성 리소스 
+생성 리소스는 다음과 같습니다.
 
+Custom Resource Definition (CRD)는 다음과 같습니다.
+'''yaml
+
+'''
+
+CRD를 생성하면 다음과 같은 리소스가 생성됩니다.
+'''yaml
+
+'''
 ## 사전 준비
 
 ## 설치 및 구성
@@ -104,5 +136,7 @@ RDE를 사용하기 위해서는 다음 링크의 소스 코드를 설치 및 �
 ## Q&A
 DevPlace에 대한 사용에 대한 질문이나 Cloud Native Application 과 Microservice 전환에 대한 질문은 다음 메일로 문의 주시기 바랍니다.
 
+yongwoo.yi0@gmail.com
+
 # License
-- TEST
+이 프로젝트는 Apache License 2.0에 따라 라이선스가 부여됩니다. 자세한 내용은 [LICENSE](https://www.apache.org/licenses/LICENSE-2.0) 파일을 참고하세요.
