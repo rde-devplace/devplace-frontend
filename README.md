@@ -115,14 +115,150 @@ keycloak 기반의 ouath2 resource server 구조로 별도 세션 정보를 저�
 생성 리소스는 다음과 같습니다.
 
 Custom Resource Definition (CRD)는 다음과 같습니다.
-'''yaml
 
-'''
+```yaml
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+name: ideconfigs.amdev.cloriver.io
+spec:
+group: amdev.cloriver.io
+versions:
+- name: v1
+  served: true
+  storage: true
+  schema:
+  openAPIV3Schema:
+  type: object
+  properties:
+  spec:
+  type: object
+  properties:
+  userName:
+  type: string
+  serviceTypes:
+  type: array
+  items:
+  type: string
+  enum:
+  - vscode
+  - webssh
+  vscode:
+  type: object
+  properties:
+  git:
+  type: object
+  properties:
+  id:
+  type: string
+  token:
+  type: string
+  repository:
+  type: string
+  branch:
+  type: string
+  webssh:
+  type: object
+  properties:
+  permission:
+  type: object
+  properties:
+  useType:
+  type: string
+  enum:
+  - create
+  - use
+  role:
+  type: string
+  enum:
+  - administrator
+  - architect
+  - developer
+  - coder
+  scope:
+  type: string
+  enum:
+  - namespace
+  - cluster
+  serviceAccountName:
+  type: string
+  x-kubernetes-preserve-unknown-fields: true
+            portList:
+              type: array
+              items:
+                type: object
+                properties:
+                  name:
+                    type: string
+                  protocol:
+                    type: string
+                  port:
+                    type: integer
+                  targetPort:
+                    type: integer
+            infrastructureSize:
+              type: object
+              properties:
+                cpu:
+                  type: string
+                memory:
+                  type: string
+                disk:
+                  type: string
+            replicas:
+              type: integer
+          required:
+          - userName
+          - serviceTypes
+          - infrastructureSize
+          - portList
+scope: Namespaced
+names:
+kind: IdeConfig
+plural: ideconfigs
+singular: ideconfig
+shortNames:
+- ic
+
+```
 
 CRD를 생성하면 다음과 같은 리소스가 생성됩니다.
-'''yaml
 
-'''
+```yaml
+apiVersion: amdev.cloriver.io/v1
+kind: IdeConfig
+metadata:
+  name: vscode-server
+spec:
+  userName: "himang10"
+  serviceTypes:
+    - vscode
+    - webssh
+  webssh:
+    permission:
+      useType: "create"
+      role: "architect"
+      scope: "cluster"
+  vscode:
+    git:
+      id: "himang10"
+      token: "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"
+      repository: "https://github.com/himang10/sample-cloud-stream-with-kafka-with-sleuth.git"
+  portList:
+    - name: "http"
+      protocol: "TCP"
+      port: 8080
+      targetPort: 8080
+    - name: "mgmt"
+      protocol: "TCP"
+      port: 9090
+      targetPort: 9090  
+  infrastructureSize:
+    cpu: "200m"
+    memory: "512Mi"
+    disk: "20Gi"
+  replicas: 1
+```
 ## 사전 준비
 
 ## 설치 및 구성
