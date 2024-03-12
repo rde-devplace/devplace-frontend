@@ -8,10 +8,6 @@
 
 ## 설치 및 구성 
 
-> sudo chown -R $(whoami) ~/.npm
-> npm cache clean --force
-> npm install 
-
 ## 사용 방법
 
 ## License

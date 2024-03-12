@@ -2,6 +2,7 @@
   kind: Deployment
   metadata:
     name: frontend-ide-deployment
+    namespace: kube-pattern
     labels:
       app: frontend-ide
   spec:
@@ -12,13 +13,13 @@
     template:
       metadata:
         annotations: 
-            update: 2e077d065799ae7c4156d9ea837aff32
+            update: ab58a55c627e919bbcd15313e7ed75e8
         labels:
           app: frontend-ide
       spec:
         containers:
           - name: frontend-ide
-            image: amdp-registry.skamdp.org/mydev-ywyi/frontend-ide:1.0.0
+            image: amdp-registry.skamdp.org/mydev-ywyi/frontend-ide:1.0.1
             imagePullPolicy: Always
 
 

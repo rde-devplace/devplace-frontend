@@ -2,6 +2,7 @@
   kind: Deployment
   metadata:
     name: ${IMAGE_NAME}-deployment
+    namespace: ${NAMESPACE}
     labels:
       app: ${IMAGE_NAME}
   spec:

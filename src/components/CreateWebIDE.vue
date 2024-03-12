@@ -24,7 +24,7 @@ export default {
     return {
       ideConfigSpec: {
         userName: '', // 사용자 이름
-        serviceTypes: ['vscode', 'webssh'], // 서비스 타입들의 리스트
+        serviceTypes: ['vscode', 'webssh', 'notebook'], // 서비스 타입들의 리스트
         webssh: {
           permission: {
             useType: 'create', // 'create' 또는 'use'
@@ -123,7 +123,20 @@ export default {
       }
 
     },
+    async submitNothing() {
+      this.$emit('success', false)
+      this.$emit('closePopup')
+    },
+
     closePopup() {
+      const { serviceTypes } = this.ideConfigSpec;
+      if (serviceTypes.includes('vscode')) {
+        this.$emit('checkServiceType', 'vscode');
+      } else if (serviceTypes.includes('webssh')) {
+        this.$emit('checkServiceType', 'cli');
+      } else if (serviceTypes.includes('notebook')) {
+        this.$emit('checkServiceType', 'jupyter');
+      }
 
       this.$emit('closePopup') // Wetty.vue로 이벤트 전송
       this.$emit('success', true)
@@ -146,6 +159,10 @@ export default {
         <label>
           <input type="checkbox" value="webssh" v-model="ideConfigSpec.serviceTypes">
           webssh
+        </label>
+        <label>
+          <input type="checkbox" value="notebook" v-model="ideConfigSpec.serviceTypes">
+          notebook
         </label>
       </div>
     </div>
@@ -276,7 +293,7 @@ export default {
 
     <!-- 제출 버튼들의 컨테이너 -->
     <div class="button-container">
-      <button @click="closePopup">
+      <button @click="submitNothing">
         닫기
       </button>
       <button @click="submitCreateWebIDE">

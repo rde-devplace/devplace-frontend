@@ -21,6 +21,8 @@ const defaultPath = 'dev'
 const wettyURL = `${wettyBaseURL}${defaultPath}`
 const k9sURL = `${wettyURL}/k9/wetty`
 
+const currentServiceType = ref('vscode') // 현재 서비스 타입을 저장하기 위한 변수
+
 const openPopup = () => {
   popupVisible.value = true
 }
@@ -125,8 +127,15 @@ const deleteWebIDE = async () => {
 // 버튼의 활성화 상태를 확인하는 함수
 const checkVscodeAvailability = async () => {
   console.log('checkVscodeAvailability: buttonDisabled: ' + buttonDisabled.value + ' / loading: ' + loading.value)
+
+  // localStorage에 저장된 서비스 타입이 있는지 확인
+  const storedServiceType = localStorage.getItem('currentServiceType');
+  if (storedServiceType) {
+    currentServiceType.value = storedServiceType;
+  }
+
   const checkName = await fetchUserName()
-  const vscodeEndpoint = `${wettyBaseURL}${checkName}/vscode/`
+  const vscodeEndpoint = `${wettyBaseURL}${checkName}/${currentServiceType.value}/`
 
   userName.value = checkName
   const response = await axios.get(vscodeEndpoint)
@@ -141,25 +150,37 @@ const checkVscodeAvailability = async () => {
   }
 }
 
-const handleIdeCreationSuccess = () => {
-  console.log('handleIdeCreationSuccess: buttonDisabled: ' + buttonDisabled.value + ' / loading: ' + loading.value);
-  loading.value = true; // IDE 생성 성공시 로딩 시작
-  let timeoutId: number | undefined;
+// 서비스 타입을 처리하는 함수
+const handleServiceType = (serviceType: string) => {
+  currentServiceType.value = serviceType; // 받은 서비스 타입으로 업데이트
+  localStorage.setItem('currentServiceType', serviceType); // LocalStorage에 저장
+  console.log(`Received service type: ${serviceType}`);
+};
 
-  const interval = setInterval(async () => {
-    await checkVscodeAvailability();
-    if (buttonDisabled.value) {
-      clearInterval(interval);
-      clearTimeout(timeoutId); // 버튼 활성화시 타임아웃 취소
-    }
-  }, 1000); // 1초마다 확인
+const handleIdeCreationSuccess = (success: boolean) => {
+  if (success === true) {
+    console.log('handleIdeCreationSuccess: buttonDisabled: ' + buttonDisabled.value + ' / loading: ' + loading.value);
+    loading.value = true; // IDE 생성 성공시 로딩 시작
+    let timeoutId: number | undefined;
 
-  // 3분 후 타임아웃 설정
-  timeoutId = setTimeout(() => {
-    clearInterval(interval); // 인터벌 정지
-    loading.value = false; // 로딩 상태 비활성화
-    alert('타임아웃: 개발 환경 구성이 지연되고 있습니다. 문제가 지속되면 관리자에게 문의하세요.');
-  }, 180000); // 180초(3분) 후 타임아웃
+    const interval = window.setInterval(async () => {
+      await checkVscodeAvailability();
+      if (buttonDisabled.value) {
+        clearInterval(interval);
+        clearTimeout(timeoutId); // 버튼 활성화시 타임아웃 취소
+      }
+    }, 1000); // 1초마다 확인
+
+    // 3분 후 타임아웃 설정
+    timeoutId = window.setTimeout(() => {
+      clearInterval(interval); // 인터벌 정지
+      loading.value = false; // 로딩 상태 비활성화
+      alert('타임아웃: 개발 환경 구성이 지연되고 있습니다. 문제가 지속되면 관리자에게 문의하세요.');
+    }, 180000); // 180초(3분) 후 타임아웃
+  }
+  else {
+    loading.value = false;
+  }
 };
 
 onMounted(async () => {
@@ -224,6 +245,30 @@ const openVscode = async () => {
   popupVisible.value = false
 }
 
+const openNotebook = async () => {
+  const checkName = await fetchUserName()
+  let jupyterURL
+
+  if (checkName) {
+    jupyterURL = `${wettyBaseURL}${checkName}/jupyter/`
+    try {
+      const response = await axios.get(jupyterURL)
+      if (response.status === 200)
+        window.open(jupyterURL, '_blank')
+      else
+        throw new Error(`${checkName}: Jupyter가 실행 중인지 확인 바랍니다`)
+    }
+    catch (error) {
+      alert(`${checkName}: Jupyter가 실행 중인지 확인 바랍니다`)
+    }
+  }
+  else {
+    alert(`${checkName}: Jupyter가 실행 중인지 확인 바랍니다`)
+  }
+
+  popupVisible.value = false
+}
+
 const closeIframe = () => {
   iframeVisible.value = false
 }
@@ -276,15 +321,19 @@ const updateButtonDisabled = (value: boolean) => {
           @success="handleIdeCreationSuccess"
           @close-popup="closeCreateWebIDEPopup"
           @update-button-disabled="updateButtonDisabled"
+          @checkServiceType="handleServiceType"
       />
     </section>
     <!-- 팝업 모달 -->
     <div v-if="popupVisible" class="modal">
       <button @click="openCLI">
-        Open CLI Terminal
+        Open CLI RDE
       </button>
       <button @click="openVscode">
-        Open VSCode Developer Environment
+        Open VSCode RDE
+      </button>
+      <button @click="openNotebook">
+        Open Notebook RDE
       </button>
       <button @click="closePopup">
         닫기
