@@ -21,8 +21,6 @@ const defaultPath = 'dev'
 const wettyURL = `${wettyBaseURL}${defaultPath}`
 const k9sURL = `${wettyURL}/k9/wetty`
 
-const currentServiceType = ref('vscode') // 현재 서비스 타입을 저장하기 위한 변수
-
 const openPopup = () => {
   popupVisible.value = true
 }
@@ -124,38 +122,38 @@ const deleteWebIDE = async () => {
   }
 }
 
-// 버튼의 활성화 상태를 확인하는 함수
 const checkVscodeAvailability = async () => {
-  console.log('checkVscodeAvailability: buttonDisabled: ' + buttonDisabled.value + ' / loading: ' + loading.value)
+  console.log('checkVscodeAvailability: buttonDisabled: ' + buttonDisabled.value + ' / loading: ' + loading.value);
 
-  // localStorage에 저장된 서비스 타입이 있는지 확인
-  const storedServiceType = localStorage.getItem('currentServiceType');
-  if (storedServiceType) {
-    currentServiceType.value = storedServiceType;
+  const checkName = await fetchUserName();
+  const vscodeEndpoints = [
+    `${wettyBaseURL}${checkName}/vscode`,
+    `${wettyBaseURL}${checkName}/cli`,
+    `${wettyBaseURL}${checkName}/jupyter`
+  ];
+
+  userName.value = checkName;
+
+  for (let i = 0; i < vscodeEndpoints.length; i++) {
+    try {
+      const response = await axios.get(vscodeEndpoints[i]);
+      if (response.status === 200) {
+        console.log(`checkVscodeAvailability:axios.get() 200 OK at ${vscodeEndpoints[i]} buttonDisabled: ` + buttonDisabled.value + ' / loading: ' + loading.value);
+        buttonDisabled.value = true;
+        loading.value = false;
+        return; // 성공 시 나머지 요청 중단
+      }
+    } catch (error) {
+      console.error(`Error fetching ${vscodeEndpoints[i]}: `, error);
+      // 에러 발생 시 다음 endpoint 시도
+    }
   }
 
-  const checkName = await fetchUserName()
-  const vscodeEndpoint = `${wettyBaseURL}${checkName}/${currentServiceType.value}/`
-
-  userName.value = checkName
-  const response = await axios.get(vscodeEndpoint)
-  if (response.status === 200) {
-    buttonDisabled.value = true
-    loading.value = false
-    console.log('checkVscodeAvailability:axios.get() 200 OK  buttonDisabled: ' + buttonDisabled.value + ' / loading: ' + loading.value)
-  }
-  else {
-    console.log('사용자 환경 생성중입니다')
-    buttonDisabled.value = false
-  }
-}
-
-// 서비스 타입을 처리하는 함수
-const handleServiceType = (serviceType: string) => {
-  currentServiceType.value = serviceType; // 받은 서비스 타입으로 업데이트
-  localStorage.setItem('currentServiceType', serviceType); // LocalStorage에 저장
-  console.log(`Received service type: ${serviceType}`);
+  // 모든 요청이 실패했을 경우
+  console.log('모든 사용자 환경 생성 시도가 실패했습니다.');
+  buttonDisabled.value = false; // 최종 상태를 disabled로 설정
 };
+
 
 const handleIdeCreationSuccess = (success: boolean) => {
   if (success === true) {
@@ -321,7 +319,6 @@ const updateButtonDisabled = (value: boolean) => {
           @success="handleIdeCreationSuccess"
           @close-popup="closeCreateWebIDEPopup"
           @update-button-disabled="updateButtonDisabled"
-          @checkServiceType="handleServiceType"
       />
     </section>
     <!-- 팝업 모달 -->

@@ -3,8 +3,11 @@
 <script>
 import axios from 'axios'
 import { wettyBaseURL } from '../../config'
+import { ref } from 'vue'
 
 const wettyURL = `${wettyBaseURL}`
+
+const successCreate = ref(false)
 
 export default {
   props: {
@@ -21,12 +24,12 @@ export default {
     return {
       ideConfigSpec: {
         userName: '', // 사용자 이름
-        serviceTypes: ['vscode', 'webssh'], // 서비스 타입들의 리스트
+        serviceTypes: ['vscode', 'webssh', 'notebook'], // 서비스 타입들의 리스트
         webssh: {
           permission: {
-            useType: '', // 'create' 또는 'use'
-            role: '', // 'administrator', 'architect', 'developer', 'coder' 중 하나
-            scope: '', // 'namespace' 또는 'cluster'
+            useType: 'create', // 'create' 또는 'use'
+            role: 'architect', // 'administrator', 'architect', 'developer', 'coder' 중 하나
+            scope: 'namespace', // 'namespace' 또는 'cluster'
             serviceAccountName: 'default',
             additionalProperties: {}
           }
@@ -44,9 +47,9 @@ export default {
           { name: 'service', protocol: 'TCP', port: 8080, targetPort: 8080 }
         ],
         infrastructureSize: { // 인프라 사이즈
-          cpu: '200m',
-          memory: '512Mi',
-          disk: '20Gi'
+          cpu: '100m',
+          memory: '256Mi',
+          disk: '10Gi'
         },
         replicas: 1 // 레플리카 수
       },
@@ -77,7 +80,9 @@ export default {
       const ideConfigApiUrl = `${wettyURL}api/ide-configs/custom-resource?namespace=${ns}&name=${name}`
       const vscodeRouteApiUrl = `${wettyURL}api/route/vscode?namespace=${ns}&name=${name}`
 
+
       try {
+
         console.log('Sending IDE Config request:', structuredData)
         const ideConfigResponse = await axios.post(ideConfigApiUrl, structuredData, {
           headers: {
@@ -91,6 +96,7 @@ export default {
           //const portArray = this.portList.map(item => item.port)
           const portArray = this.ideConfigSpec.portList.map(item => item.port)
           console.log('Sending VSCode Route request:', portArray)
+
           const vscodeRouteResponse = await axios.post(vscodeRouteApiUrl, portArray, {
             headers: {
               'Content-Type': 'application/json',
@@ -98,22 +104,44 @@ export default {
           })
           console.log('VSCode Route response:', vscodeRouteResponse.data)
 
+          if(vscodeRouteResponse.status === 200) {
+            successCreate.value = true
+          }
+          else {
+            successCreate.value = false
+          }
+
+
           const dataArray = [ideConfigResponse.data, vscodeRouteResponse.data]
           const resultPopup = window.open('', 'Result', 'width=600,height=900')
           resultPopup.document.write(`<pre>${JSON.stringify(dataArray, null, 2)}</pre>`)
-          this.$emit('updateButtonDisabled', true)
+
         }
+      } catch (error) {
+        console.log('Error during the request:', error)
+        //alert(`Error: ${error.message}\n\nData:\n${JSON.stringify(structuredData)}`)
       }
-      catch (error) {
-        console.error('Error during the request:', error)
-        alert(`Error: ${error.message}\n\nData:\n${JSON.stringify(structuredData)}`)
-      }
-      finally {
-        this.closePopup()
-      }
+
     },
+    async submitNothing() {
+      this.$emit('success', false)
+      this.$emit('closePopup')
+    },
+
+
     closePopup() {
+      const { serviceTypes } = this.ideConfigSpec;
+      if (serviceTypes.includes('vscode')) {
+        this.$emit('checkServiceType', 'vscode');
+      } else if (serviceTypes.includes('webssh')) {
+        this.$emit('checkServiceType', 'cli');
+      } else if (serviceTypes.includes('notebook')) {
+        this.$emit('checkServiceType', 'jupyter');
+      }
+
       this.$emit('closePopup') // Wetty.vue로 이벤트 전송
+      this.$emit('success', true)
+      this.$emit('updateButtonDisabled', true)
     },
   },
 }
@@ -132,6 +160,10 @@ export default {
         <label>
           <input type="checkbox" value="webssh" v-model="ideConfigSpec.serviceTypes">
           webssh
+        </label>
+        <label>
+          <input type="checkbox" value="notebook" v-model="ideConfigSpec.serviceTypes">
+          notebook
         </label>
       </div>
     </div>
@@ -262,7 +294,7 @@ export default {
 
     <!-- 제출 버튼들의 컨테이너 -->
     <div class="button-container">
-      <button @click="closePopup">
+      <button @click="submitNothing">
         닫기
       </button>
       <button @click="submitCreateWebIDE">

@@ -129,15 +129,6 @@ export default {
     },
 
     closePopup() {
-      const { serviceTypes } = this.ideConfigSpec;
-      if (serviceTypes.includes('vscode')) {
-        this.$emit('checkServiceType', 'vscode');
-      } else if (serviceTypes.includes('webssh')) {
-        this.$emit('checkServiceType', 'cli');
-      } else if (serviceTypes.includes('notebook')) {
-        this.$emit('checkServiceType', 'jupyter');
-      }
-
       this.$emit('closePopup') // Wetty.vue로 이벤트 전송
       this.$emit('success', true)
       this.$emit('updateButtonDisabled', true)
