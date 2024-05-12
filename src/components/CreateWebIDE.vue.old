@@ -22,6 +22,7 @@ export default {
   },
   data() {
     return {
+      packageType: 'javaAi', // 패키지 타입들의 리스트
       ideConfigSpec: {
         userName: '', // 사용자 이름
         serviceTypes: ['vscode', 'webssh', 'notebook'], // 서비스 타입들의 리스트
@@ -47,19 +48,14 @@ export default {
           { name: 'service', protocol: 'TCP', port: 8080, targetPort: 8080 }
         ],
         infrastructureSize: { // 인프라 사이즈
-          cpu: '100m',
-          memory: '256Mi',
+          cpu: '1000m',
+          memory: '2048Mi',
           disk: '10Gi'
         },
         replicas: 1 // 레플리카 수
       },
       createWebIDEVisible: true, // 기타 기존 상태들
       nameSpace: 'part-rde',
-      activeWindows: {
-        vscode: false,
-        webssh: false,
-        notebook: false
-      }
     }
   },
   created() {
@@ -77,12 +73,13 @@ export default {
 
       const name = structuredData.userName
       const ns = this.nameSpace
+      const packageType = this.packageType
 
       if(structuredData.webssh.permission.useType === 'create') {
         structuredData.webssh.permission.serviceAccountName = `${name}-ide-account`
       }
 
-      const ideConfigApiUrl = `${wettyURL}api/ide-configs/custom-resource?namespace=${ns}&name=${name}`
+      const ideConfigApiUrl = `${wettyURL}api/ide-configs/custom-resource?namespace=${ns}&name=${name}&packageType=${packageType}`
       const vscodeRouteApiUrl = `${wettyURL}api/route/vscode?namespace=${ns}&name=${name}`
 
 
@@ -134,38 +131,17 @@ export default {
     },
 
     closePopup() {
-      const { serviceTypes } = this.ideConfigSpec;
-      serviceTypes.includes('vscode') ? this.activeWindows.vscode = true : this.activeWindows.vscode = false
-      serviceTypes.includes('webssh') ? this.activeWindows.webssh = true : this.activeWindows.webssh = false
-      serviceTypes.includes('notebook') ? this.activeWindows.notebook = true : this.activeWindows.notebook = false
-      this.$emit('activeWindows', this.activeWindows)
-
       this.$emit('closePopup') // Wetty.vue로 이벤트 전송
       this.$emit('success', true)
       this.$emit('updateButtonDisabled', true)
     },
-    /*
-    closePopup() {
-      const { serviceTypes } = this.ideConfigSpec;
-      if (serviceTypes.includes('vscode')) {
-        this.$emit('checkServiceType', 'vscode');
-      } else if (serviceTypes.includes('webssh')) {
-        this.$emit('checkServiceType', 'cli');
-      } else if (serviceTypes.includes('notebook')) {
-        this.$emit('checkServiceType', 'jupyter');
-      }
-
-      this.$emit('closePopup') // Wetty.vue로 이벤트 전송
-      this.$emit('success', true)
-      this.$emit('updateButtonDisabled', true)
-    },
-     */
   },
 }
 </script>
 
 <template>
   <div v-if="createWebIDEVisible" class="modal">
+
     <!-- Service Types 선택 박스 -->
     <div class="box">
       <h3>Service Types</h3>
@@ -188,6 +164,20 @@ export default {
     <!-- vscode 설정 박스 -->
     <div class="box" v-if="ideConfigSpec.serviceTypes.includes('vscode')">
       <h3>Vscode 설정</h3>
+      <div class="input-group sub-field">
+        <label class="input-label">Package Type</label>
+        <select v-model="packageType">
+          <option disabled value="extensions">extensions</option>
+          <option value="java">java develop</option>
+          <option value="jupyter">jupyter</option>
+          <option value="vue">vue.js</option>
+          <option value="dev">develop</option>
+          <option value="javaAi">java with AI</option>
+          <option value="vueAi">vue with AI</option>
+          <option value="jupyterAi">jupyter with AI</option>
+          <option value="devAi">develop with AI</option>
+        </select>
+      </div>
       <!-- Git 사용 여부 선택 -->
       <div class="input-group">
         <label class="input-label">Git 사용</label>

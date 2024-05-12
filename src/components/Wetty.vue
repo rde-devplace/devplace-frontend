@@ -21,6 +21,61 @@ const defaultPath = 'dev'
 const wettyURL = `${wettyBaseURL}${defaultPath}`
 const k9sURL = `${wettyURL}/k9/wetty`
 
+interface IdeConfigSpec {
+  rdeServiceType: {
+    rdeType: string;
+    managedServices: Array<{
+      name: string;
+      wsName: string;
+      appName: string;
+    }>;
+  };
+  userName: string;
+  wsName: string;
+  appName: string;
+  serviceTypes: string[];
+  webssh: {
+    permission: {
+      useType: string;
+      role: string;
+      scope: string;
+      serviceAccountName: string;
+      additionalProperties: Record<string, unknown>;
+    };
+  };
+  vscode: {
+    useGit: boolean;
+    git: {
+      id: string;
+      token: string;
+      repository: string;
+      branch: string;
+    };
+  };
+  portList: Array<{
+    name: string;
+    protocol: string;
+    port: number;
+    targetPort: number;
+  }>;
+  tolerations: Array<{
+    key: string;
+    operator: string;
+    value: string;
+    effect: string;
+  }>;
+  resourceSize: {
+    cpu: string;
+    memory: string;
+  };
+  diskSize: {
+    disk: string;
+  };
+  replicas: number;
+}
+
+const ideConfigSpec = ref<IdeConfigSpec | null>(null);
+
 const openPopup = () => {
   popupVisible.value = true
 }
@@ -39,6 +94,7 @@ const fetchUserName = async () => {
       // 로컬 실행 환경일 때
       return 'testName'
     }
+    console.log('fetchUserName: wettyBaseURL: ' + wettyBaseURL)
     const response = await axios.get(`${wettyBaseURL}user/name`)
     if (response.status === 200 && response.data) { return response.data }
     else {
@@ -52,6 +108,27 @@ const fetchUserName = async () => {
     return null
   }
 }
+
+const fetchIdeConfig = async () => {
+  const ns = nameSpaceName.value // 적절한 namespace 값을 설정하세요
+  const name = userName.value // 사용자 이름을 이름으로 사용
+  const ideConfigSpecsUrl = `${wettyBaseURL}api/ide-configs/custom-resource/spec/user?namespace=${ns}&userName=${name}`
+  try {
+    const response = await axios.get<IdeConfigSpec[]>(ideConfigSpecsUrl)
+    if (response.status === 200 && response.data) {
+      ideConfigSpec.value = response.data[0]
+      const fullName = ideConfigSpec.value?.userName + "-" + ideConfigSpec.value?.wsName + "-" + ideConfigSpec.value?.appName
+      return fullName
+    } else {
+      alert('Failed to fetch ideConfigSpecs')
+      return null
+    }
+  } catch (error) {
+    console.error(error)
+    return null
+  }
+}
+
 
 const fetchUserId = async () => {
   try {
@@ -86,13 +163,16 @@ const openCreateWebIDEPopup = async () => {
 
   console.log(userName)
   if (userName.value) {
-    endpointURL.value = `${wettyBaseURL}${userName.value}/`
+    const fullName = await fetchIdeConfig();
+    endpointURL.value = `${wettyBaseURL}${fullName}/`
     createWebIDEVisible.value = true
+    // eslint-disable-next-line no-console
     // eslint-disable-next-line no-console
     console.log(endpointURL.value)
   }
   else { alert(`${userName.value}: CLI Terminal이 실행 중인지 확인 바랍니다`) }
 }
+
 
 // 버튼이 비활성화되었을 때 실행할 함수
 const deleteWebIDE = async () => {
@@ -105,10 +185,12 @@ const deleteWebIDE = async () => {
     return; // 사용자가 'Cancel'을 선택한 경우
   }
 
+  const fullName = await fetchIdeConfig()
   const ns = nameSpaceName.value // 적절한 namespace 값을 설정하세요
   const name = userName.value // 사용자 이름을 이름으로 사용
-  const ideConfigApiUrl = `${wettyBaseURL}api/ide-configs/custom-resource?namespace=${ns}&name=${name}`
-  const vscodeRouteApiUrl = `${wettyBaseURL}api/route/vscode?namespace=${ns}&name=${name}`
+
+  const ideConfigApiUrl = `${wettyBaseURL}api/ide-configs/custom-resource?namespace=${ns}&name=${fullName}`
+  const vscodeRouteApiUrl = `${wettyBaseURL}api/route/vscode?namespace=${ns}&name=${name}&wsName=${ideConfigSpec.value?.wsName}&appName=${ideConfigSpec.value?.appName}`
 
   try {
     await axios.delete(ideConfigApiUrl)
@@ -118,21 +200,20 @@ const deleteWebIDE = async () => {
     // 성공 후 필요한 추가 로직 (예: 상태 업데이트, UI 변경 등)
   } catch (error) {
     console.log(error)
-    alert('삭제 중 오류가 발생했습니다.')
+    alert('fetch Ideconfig 호출 중 에러가 발생했습니다.')
   }
 }
 
 const checkVscodeAvailability = async () => {
   console.log('checkVscodeAvailability: buttonDisabled: ' + buttonDisabled.value + ' / loading: ' + loading.value);
 
-  const checkName = await fetchUserName();
+  userName.value = await fetchUserName();
+  const fullName = await fetchIdeConfig();
   const vscodeEndpoints = [
-    `${wettyBaseURL}${checkName}/vscode`,
-    `${wettyBaseURL}${checkName}/cli`,
-    `${wettyBaseURL}${checkName}/jupyter`
+    `${wettyBaseURL}${fullName}/vscode`,
+    `${wettyBaseURL}${fullName}/cli`,
+    `${wettyBaseURL}${fullName}/jupyter`
   ];
-
-  userName.value = checkName;
 
   for (let i = 0; i < vscodeEndpoints.length; i++) {
     try {
@@ -144,7 +225,7 @@ const checkVscodeAvailability = async () => {
         return; // 성공 시 나머지 요청 중단
       }
     } catch (error) {
-      console.error(`Error fetching ${vscodeEndpoints[i]}: `, error);
+      console.error(`Error fetching : `);
       // 에러 발생 시 다음 endpoint 시도
     }
   }
@@ -196,7 +277,8 @@ const openCLI = () => {
 }
  */
 const openCLI = async () => {
-  const checkName = await fetchUserName()
+  userName.value = await fetchUserName();
+  const checkName = await fetchIdeConfig()
   let cliURL
 
   if (checkName) {
@@ -220,7 +302,8 @@ const openCLI = async () => {
 }
 
 const openVscode = async () => {
-  const checkName = await fetchUserName()
+  userName.value = await fetchUserName();
+  const checkName = await fetchIdeConfig()
   let vscodeURL
 
   if (checkName) {
@@ -244,7 +327,8 @@ const openVscode = async () => {
 }
 
 const openNotebook = async () => {
-  const checkName = await fetchUserName()
+  userName.value = await fetchUserName();
+  const checkName = await fetchIdeConfig()
   let jupyterURL
 
   if (checkName) {

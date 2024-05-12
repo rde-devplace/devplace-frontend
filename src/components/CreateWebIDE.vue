@@ -22,8 +22,17 @@ export default {
   },
   data() {
     return {
+      packageType: 'javaAi', // 패키지 타입들의 리스트
       ideConfigSpec: {
+        rdeServiceType: {
+          rdeType: 'user',
+          managedServices: [
+            {name: 'himang10', wsName: '', appName: ''}
+          ]
+        },
         userName: '', // 사용자 이름
+        wsName: '', // 워크스페이스 이름
+        appName: '', // 앱 이름
         serviceTypes: ['vscode', 'webssh', 'notebook'], // 서비스 타입들의 리스트
         webssh: {
           permission: {
@@ -46,9 +55,14 @@ export default {
         portList: [ // 포트 리스트
           { name: 'service', protocol: 'TCP', port: 8080, targetPort: 8080 }
         ],
-        infrastructureSize: { // 인프라 사이즈
-          cpu: '100m',
-          memory: '256Mi',
+        tolerations: [
+            { key: 'amdp-role',  operator: 'Equal', value: 'webide', effect: 'NoSchedule'}
+        ],
+        resourceSize: { // 인프라 사이즈
+          cpu: '1000m',
+          memory: '2048Mi',
+        },
+        diskSize: {
           disk: '10Gi'
         },
         replicas: 1 // 레플리카 수
@@ -72,17 +86,19 @@ export default {
 
       const name = structuredData.userName
       const ns = this.nameSpace
+      const packageType = this.packageType
 
       if(structuredData.webssh.permission.useType === 'create') {
         structuredData.webssh.permission.serviceAccountName = `${name}-ide-account`
       }
 
-      const ideConfigApiUrl = `${wettyURL}api/ide-configs/custom-resource?namespace=${ns}&name=${name}`
-      const vscodeRouteApiUrl = `${wettyURL}api/route/vscode?namespace=${ns}&name=${name}`
+      const fullName = name + "-" + structuredData.wsName + "-" + structuredData.appName
+
+      const ideConfigApiUrl = `${wettyURL}api/ide-configs/custom-resource?namespace=${ns}&name=${fullName}&packageType=${packageType}`
+      const vscodeRouteApiUrl = `${wettyURL}api/route/vscode?namespace=${ns}&name=${name}&wsName=${structuredData.wsName}&appName=${structuredData.appName}`
 
 
       try {
-
         console.log('Sending IDE Config request:', structuredData)
         const ideConfigResponse = await axios.post(ideConfigApiUrl, structuredData, {
           headers: {
@@ -139,6 +155,62 @@ export default {
 
 <template>
   <div v-if="createWebIDEVisible" class="modal">
+    <!-- Workspace & AppName -->
+    <div class="box">
+      <h3>RDE Service Type 설정</h3>
+      <div class="port-item">
+        <div class="input-group">
+          <label class="input-label">사용자 이름</label>
+          <input v-model="ideConfigSpec.userName" placeholder="사용자 이름 입력">
+        </div>
+        <div class="input-group">
+          <label class="input-label">워크스페이스 이름</label>
+          <input v-model="ideConfigSpec.wsName" placeholder="워크스페이스 이름 입력" >
+        </div>
+        <div class="input-group">
+          <label class="input-label">앱 이름</label>
+          <input v-model="ideConfigSpec.appName" placeholder="앱 이름 입력" >
+        </div>
+      </div>
+    </div>
+
+    <!-- RDE Service Type 설정 -->
+    <div class="box">
+      <h3>RDE Service Type 설정</h3>
+      <div class="input-group sub-field">
+        <label class="input-label">RDE 유형</label>
+        <select v-model="ideConfigSpec.rdeServiceType.rdeType">
+          <option disabled value="user">user</option>
+          <option value="share">share</option>
+          <option value="manager">collaboration</option>
+          <option value="coacher">coach</option>
+          <option value="user">user</option>
+        </select>
+      </div>
+      <div v-if="ideConfigSpec.rdeServiceType.rdeType !== 'user'">
+        <div v-for="(service, index) in ideConfigSpec.rdeServiceType.managedServices" :key="index" class="port-item">
+          <div class="input-group">
+            <label class="input-label">사용자 이름</label>
+            <input v-model="service.name" placeholder="사용자 이름 입력">
+          </div>
+          <div class="input-group">
+            <label class="input-label">워크스페이스 이름</label>
+            <input v-model="service.wsName" placeholder="워크스페이스 이름 입력" >
+          </div>
+          <div class="input-group">
+            <label class="input-label">앱 이름</label>
+            <input v-model="service.appName" placeholder="앱 이름 입력" >
+          </div>
+        </div>
+        <div class="port-item">
+          <button class="add-port-button" @click="() => ideConfigSpec.rdeServiceType.managedServices.push({ name: '', wsName: '', appName: ''})">
+            target 추가
+          </button>
+        </div>
+      </div>
+    </div>
+
+
     <!-- Service Types 선택 박스 -->
     <div class="box">
       <h3>Service Types</h3>
@@ -161,6 +233,20 @@ export default {
     <!-- vscode 설정 박스 -->
     <div class="box" v-if="ideConfigSpec.serviceTypes.includes('vscode')">
       <h3>Vscode 설정</h3>
+      <div class="input-group sub-field">
+        <label class="input-label">Package Type</label>
+        <select v-model="packageType">
+          <option disabled value="extensions">extensions</option>
+          <option value="java">java develop</option>
+          <option value="jupyter">jupyter</option>
+          <option value="vue">vue.js</option>
+          <option value="dev">develop</option>
+          <option value="javaAi">java with AI</option>
+          <option value="vueAi">vue with AI</option>
+          <option value="jupyterAi">jupyter with AI</option>
+          <option value="devAi">develop with AI</option>
+        </select>
+      </div>
       <!-- Git 사용 여부 선택 -->
       <div class="input-group">
         <label class="input-label">Git 사용</label>
@@ -247,15 +333,15 @@ export default {
       <div class="port-item">
         <div class="input-group">
           <label class="input-label">CPU</label>
-          <input v-model="ideConfigSpec.infrastructureSize.cpu" placeholder="CPU 입력">
+          <input v-model="ideConfigSpec.resourceSize.cpu" placeholder="CPU 입력">
         </div>
         <div class="input-group">
           <label class="input-label">MEM</label>
-          <input v-model="ideConfigSpec.infrastructureSize.memory" placeholder="메모리 입력">
+          <input v-model="ideConfigSpec.resourceSize.memory" placeholder="메모리 입력">
         </div>
         <div class="input-group">
           <label class="input-label">DISK</label>
-          <input v-model="ideConfigSpec.infrastructureSize.disk" placeholder="디스크 입력">
+          <input v-model="ideConfigSpec.diskSize.disk" placeholder="디스크 입력">
         </div>
       </div>
     </div>
@@ -280,6 +366,40 @@ export default {
           <input v-model="ideConfigSpec.replicas" placeholder="레플리카 수 입력" type="number">
         </div>
       </div>
+    </div>
+
+    <!-- Toleration -->
+    <div class="box">
+      <h3>Tolerations</h3>
+      <div v-for="(toleration, index) in ideConfigSpec.tolerations" :key="index" class="port-item">
+        <div class="input-group">
+          <label class="input-label">key</label>
+          <input v-model="toleration.key" placeholder="key 입력">
+        </div>
+        <div class="input-group">
+          <label class="input-label">operator</label>
+          <select v-model="toleration.operator">
+            <option disabled value="Equal">Equal</option>
+            <option value="Exists">Exists</option>
+            <option value="Equal">Equal</option>
+          </select>
+        </div>
+        <div class="input-group">
+          <label class="input-label">value</label>
+          <input v-model="toleration.value" placeholder="value 입력">
+        </div>
+        <div class="input-group">
+          <label class="input-label">effect</label>
+          <select v-model="toleration.effect">
+            <option disabled value="NoSchedule">NoSchedule</option>
+            <option value="NoExecute">NoExecute</option>
+            <option value="NoSchedule">NoSchedule</option>
+          </select>
+        </div>
+      </div>
+      <button class="add-port-button" @click="() => ideConfigSpec.tolerations.push({ key: '', operator: '', value: '', effect: '' })">
+        포트 추가
+      </button>
     </div>
 
     <!-- 제출 버튼들의 컨테이너 -->

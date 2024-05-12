@@ -2,7 +2,7 @@
   kind: Deployment
   metadata:
     name: frontend-ide-deployment
-    namespace: kube-pattern
+    namespace: part-rde
     labels:
       app: frontend-ide
   spec:
@@ -13,13 +13,13 @@
     template:
       metadata:
         annotations: 
-            update: 789cbc66f5ada8f76cad938d067fdcad
+            update: 8a94b5506bdc3b41295f41a847408f71
         labels:
           app: frontend-ide
       spec:
         containers:
           - name: frontend-ide
-            image: amdp-registry.skamdp.org/mydev-ywyi/frontend-ide:1.0.1
+            image: amdp-registry.skamdp.org/mydev-ywyi/frontend-ide:IDE.1.0.4
             imagePullPolicy: Always
 
 
