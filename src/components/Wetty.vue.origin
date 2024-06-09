@@ -21,67 +21,7 @@ const defaultPath = 'dev'
 const wettyURL = `${wettyBaseURL}${defaultPath}`
 const k9sURL = `${wettyURL}/k9/wetty`
 
-interface IdeConfigSpec {
-  rdeServiceType: {
-    rdeType: string;
-    managedServices: Array<{
-      name: string;
-      wsName: string;
-      appName: string;
-    }>;
-  };
-  userName: string;
-  wsName: string;
-  appName: string;
-  serviceTypes: string[];
-  webssh: {
-    permission: {
-      useType: string;
-      role: string;
-      scope: string;
-      serviceAccountName: string;
-      additionalProperties: Record<string, unknown>;
-    };
-  };
-  vscode: {
-    useGit: boolean;
-    git: {
-      id: string;
-      token: string;
-      repository: string;
-      branch: string;
-    };
-  };
-  portList: Array<{
-    name: string;
-    protocol: string;
-    port: number;
-    targetPort: number;
-  }>;
-  tolerations: Array<{
-    key: string;
-    operator: string;
-    value: string;
-    effect: string;
-  }>;
-  resourceSize: {
-    cpu: string;
-    memory: string;
-  };
-  diskSize: {
-    disk: string;
-  };
-  replicas: number;
-}
-
-interface AppStatus {
-  name: string;
-  status: 'running' | 'waiting' | 'terminated' | 'not-ready' | 'Not-Found';
-  reason?: string;
-  message?: string;
-}
-
-const ideConfigSpec = ref<IdeConfigSpec | null>(null);
+const currentServiceType = ref('vscode') // 현재 서비스 타입을 저장하기 위한 변수
 
 const openPopup = () => {
   popupVisible.value = true
@@ -101,7 +41,6 @@ const fetchUserName = async () => {
       // 로컬 실행 환경일 때
       return 'testName'
     }
-    console.log('fetchUserName: wettyBaseURL: ' + wettyBaseURL)
     const response = await axios.get(`${wettyBaseURL}user/name`)
     if (response.status === 200 && response.data) { return response.data }
     else {
@@ -115,27 +54,6 @@ const fetchUserName = async () => {
     return null
   }
 }
-
-const fetchIdeConfig = async () => {
-  const ns = nameSpaceName.value // 적절한 namespace 값을 설정하세요
-  const name = userName.value // 사용자 이름을 이름으로 사용
-  const ideConfigSpecsUrl = `${wettyBaseURL}api/ide-configs/custom-resource/spec/user?namespace=${ns}&userName=${name}`
-  try {
-    const response = await axios.get<IdeConfigSpec[]>(ideConfigSpecsUrl)
-    if (response.status === 200 && response.data) {
-      ideConfigSpec.value = response.data[0]
-      const fullName = ideConfigSpec.value?.userName + "-" + ideConfigSpec.value?.wsName + "-" + ideConfigSpec.value?.appName
-      return fullName
-    } else {
-      alert('Failed to fetch ideConfigSpecs')
-      return null
-    }
-  } catch (error) {
-    console.error(error)
-    return null
-  }
-}
-
 
 const fetchUserId = async () => {
   try {
@@ -170,34 +88,29 @@ const openCreateWebIDEPopup = async () => {
 
   console.log(userName)
   if (userName.value) {
-    const fullName = await fetchIdeConfig();
-    endpointURL.value = `${wettyBaseURL}${fullName}/`
+    endpointURL.value = `${wettyBaseURL}${userName.value}/`
     createWebIDEVisible.value = true
-    // eslint-disable-next-line no-console
     // eslint-disable-next-line no-console
     console.log(endpointURL.value)
   }
   else { alert(`${userName.value}: CLI Terminal이 실행 중인지 확인 바랍니다`) }
 }
 
-
 // 버튼이 비활성화되었을 때 실행할 함수
 const deleteWebIDE = async () => {
   // WebIDE 삭제 로직
   console.log('WebIDE 삭제 로직 실행');
   userName.value = await fetchUserName()
-  //nameSpaceName.value = 'kube-pattern'
+  nameSpaceName.value = 'part-rde'
 
   if (!confirm('정말 삭제하시겠습니까?')) {
     return; // 사용자가 'Cancel'을 선택한 경우
   }
 
-  const fullName = await fetchIdeConfig()
   const ns = nameSpaceName.value // 적절한 namespace 값을 설정하세요
   const name = userName.value // 사용자 이름을 이름으로 사용
-
-  const ideConfigApiUrl = `${wettyBaseURL}api/ide-configs/custom-resource?namespace=${ns}&name=${fullName}`
-  const vscodeRouteApiUrl = `${wettyBaseURL}api/route/vscode?namespace=${ns}&name=${name}&wsName=${ideConfigSpec.value?.wsName}&appName=${ideConfigSpec.value?.appName}`
+  const ideConfigApiUrl = `${wettyBaseURL}api/ide-configs/custom-resource?namespace=${ns}&name=${name}`
+  const vscodeRouteApiUrl = `${wettyBaseURL}api/route/vscode?namespace=${ns}&name=${name}`
 
   try {
     await axios.delete(ideConfigApiUrl)
@@ -207,43 +120,41 @@ const deleteWebIDE = async () => {
     // 성공 후 필요한 추가 로직 (예: 상태 업데이트, UI 변경 등)
   } catch (error) {
     console.log(error)
-    alert('fetch Ideconfig 호출 중 에러가 발생했습니다.')
+    alert('삭제 중 오류가 발생했습니다.')
   }
 }
 
+// 버튼의 활성화 상태를 확인하는 함수
 const checkVscodeAvailability = async () => {
-  console.log('checkVscodeAvailability: buttonDisabled: ' + buttonDisabled.value + ' / loading: ' + loading.value);
+  console.log('checkVscodeAvailability: buttonDisabled: ' + buttonDisabled.value + ' / loading: ' + loading.value)
 
-  userName.value = await fetchUserName();
-  const fullName = await fetchIdeConfig();
-  const namespace = nameSpaceName.value; // 네임스페이스를 설정합니다.
-  const statusEndPointUrl = `${wettyBaseURL}api/ide-configs/custom-resource/app-status?namespace=${namespace}&name=${fullName}`
-
-  try {
-    const response = await axios.get<AppStatus[]>(statusEndPointUrl); // 타입 지정
-    if (response.status === 200) {
-      const appStatuses: AppStatus[] = response.data; // 서버에서 반환된 JSON 데이터
-      // 모든 컨테이너의 상태가 running인지 확인합니다.
-      const allRunning = appStatuses.every((appStatus: AppStatus) => appStatus.status === 'running');
-
-      if (allRunning && appStatuses.length > 0) {
-        console.log(`All containers are running for ${fullName}`);
-        buttonDisabled.value = true;
-        loading.value = false;
-        return;
-      } else {
-        console.log(`Not all containers are running for ${fullName}`);
-      }
-    } else {
-      console.error(`Error fetching status: ${response.status}`);
-    }
-  } catch (error) {
-    console.error(`Error fetching status: ${error}`);
+  // localStorage에 저장된 서비스 타입이 있는지 확인
+  const storedServiceType = localStorage.getItem('currentServiceType');
+  if (storedServiceType) {
+    currentServiceType.value = storedServiceType;
   }
 
-  // 모든 요청이 실패했을 경우
-  console.log('모든 사용자 환경 생성 시도가 실패했습니다.');
-  buttonDisabled.value = false; // 최종 상태를 disabled로 설정
+  const checkName = await fetchUserName()
+  const vscodeEndpoint = `${wettyBaseURL}${checkName}/${currentServiceType.value}/`
+
+  userName.value = checkName
+  const response = await axios.get(vscodeEndpoint)
+  if (response.status === 200) {
+    buttonDisabled.value = true
+    loading.value = false
+    console.log('checkVscodeAvailability:axios.get() 200 OK  buttonDisabled: ' + buttonDisabled.value + ' / loading: ' + loading.value)
+  }
+  else {
+    console.log('사용자 환경 생성중입니다')
+    buttonDisabled.value = false
+  }
+}
+
+// 서비스 타입을 처리하는 함수
+const handleServiceType = (serviceType: string) => {
+  currentServiceType.value = serviceType; // 받은 서비스 타입으로 업데이트
+  localStorage.setItem('currentServiceType', serviceType); // LocalStorage에 저장
+  console.log(`Received service type: ${serviceType}`);
 };
 
 const handleIdeCreationSuccess = (success: boolean) => {
@@ -287,8 +198,7 @@ const openCLI = () => {
 }
  */
 const openCLI = async () => {
-  userName.value = await fetchUserName();
-  const checkName = await fetchIdeConfig()
+  const checkName = await fetchUserName()
   let cliURL
 
   if (checkName) {
@@ -312,8 +222,7 @@ const openCLI = async () => {
 }
 
 const openVscode = async () => {
-  userName.value = await fetchUserName();
-  const checkName = await fetchIdeConfig()
+  const checkName = await fetchUserName()
   let vscodeURL
 
   if (checkName) {
@@ -337,8 +246,7 @@ const openVscode = async () => {
 }
 
 const openNotebook = async () => {
-  userName.value = await fetchUserName();
-  const checkName = await fetchIdeConfig()
+  const checkName = await fetchUserName()
   let jupyterURL
 
   if (checkName) {
@@ -369,28 +277,11 @@ const updateButtonDisabled = (value: boolean) => {
   console.log('updateButtonDisabled: ' + value)
   buttonDisabled.value = value
 }
-
-const createdNamespace = (value: string) => {
-  console.log('createdNamespace: ' + value)
-  nameSpaceName.value = value
-}
 </script>
 
 <template>
   <main class="main-container">
     <div class="content">
-      <!-- naemspace box -->
-      <div class="box">
-        <div class="port-item">
-          <div class="input-group">
-            <label class="input-label">selected namespace</label>
-            <input v-model="nameSpaceName" placeholder="Namespace 입력">
-            <button class="input-label" @click="checkVscodeAvailability">
-              확인
-            </button>
-          </div>
-        </div>
-      </div>
       <!-- 로딩 이미지 -->
       <img v-if="loading" src="../assets/loading.gif" alt="Loading..." class="loading-image" />
       <div class="workspace-header">
@@ -430,7 +321,7 @@ const createdNamespace = (value: string) => {
           @success="handleIdeCreationSuccess"
           @close-popup="closeCreateWebIDEPopup"
           @update-button-disabled="updateButtonDisabled"
-          @namespace-name="createdNamespace"
+          @checkServiceType="handleServiceType"
       />
     </section>
     <!-- 팝업 모달 -->

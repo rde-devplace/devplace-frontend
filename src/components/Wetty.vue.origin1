@@ -21,6 +21,20 @@ const defaultPath = 'dev'
 const wettyURL = `${wettyBaseURL}${defaultPath}`
 const k9sURL = `${wettyURL}/k9/wetty`
 
+const currentServiceType = ref('vscode') // 현재 서비스 타입을 저장하기 위한 변수
+
+interface ActiveWindows {
+  vscode: boolean;
+  webssh: boolean;
+  notebook: boolean;
+}
+
+const myActiveWindows = ref({
+  vscode: false,
+  webssh: false,
+  notebook: false,
+});
+
 const openPopup = () => {
   popupVisible.value = true
 }
@@ -39,7 +53,6 @@ const fetchUserName = async () => {
       // 로컬 실행 환경일 때
       return 'testName'
     }
-    console.log('fetchUserName: wettyBaseURL: ' + wettyBaseURL)
     const response = await axios.get(`${wettyBaseURL}user/name`)
     if (response.status === 200 && response.data) { return response.data }
     else {
@@ -123,38 +136,58 @@ const deleteWebIDE = async () => {
   }
 }
 
+// 버튼의 활성화 상태를 확인하는 함수
 const checkVscodeAvailability = async () => {
-  console.log('checkVscodeAvailability: buttonDisabled: ' + buttonDisabled.value + ' / loading: ' + loading.value);
+  console.log('checkVscodeAvailability: buttonDisabled: ' + buttonDisabled.value + ' / loading: ' + loading.value)
 
-  const checkName = await fetchUserName();
-  const vscodeEndpoints = [
-    `${wettyBaseURL}${checkName}/vscode`,
-    `${wettyBaseURL}${checkName}/cli`,
-    `${wettyBaseURL}${checkName}/jupyter`
-  ];
-
-  userName.value = checkName;
-
-  for (let i = 0; i < vscodeEndpoints.length; i++) {
-    try {
-      const response = await axios.get(vscodeEndpoints[i]);
-      if (response.status === 200) {
-        console.log(`checkVscodeAvailability:axios.get() 200 OK at ${vscodeEndpoints[i]} buttonDisabled: ` + buttonDisabled.value + ' / loading: ' + loading.value);
-        buttonDisabled.value = true;
-        loading.value = false;
-        return; // 성공 시 나머지 요청 중단
-      }
-    } catch (error) {
-      console.error(`Error fetching : `);
-      // 에러 발생 시 다음 endpoint 시도
-    }
+  // localStorage에 저장된 서비스 타입이 있는지 확인
+  const storedActiveWindows = localStorage.getItem('activeWindows');
+  if (storedActiveWindows) {
+    let activeWindows = JSON.parse(storedActiveWindows);
+    currentServiceType.value = isActiveWindows(activeWindows);
+    myActiveWindows.value.webssh = activeWindows.webssh;
+    myActiveWindows.value.vscode = activeWindows.vscode;
+    myActiveWindows.value.notebook = activeWindows.notebook;
+    console.log('checkVscodeAvailability:localStorage.getItem() currentServiceType: ' + currentServiceType.value)
+    console.log('checkVscodeAvailability:localStorage.getItem() myActiveWindows: ' + JSON.stringify(myActiveWindows.value))
   }
 
-  // 모든 요청이 실패했을 경우
-  console.log('모든 사용자 환경 생성 시도가 실패했습니다.');
-  buttonDisabled.value = false; // 최종 상태를 disabled로 설정
+  const checkName = await fetchUserName()
+  const vscodeEndpoint = `${wettyBaseURL}${checkName}/${currentServiceType.value}/`
+
+  userName.value = checkName
+  const response = await axios.get(vscodeEndpoint)
+  if (response.status === 200) {
+    buttonDisabled.value = true
+    loading.value = false
+    console.log('checkVscodeAvailability:axios.get() 200 OK  buttonDisabled: ' + buttonDisabled.value + ' / loading: ' + loading.value)
+  }
+  else {
+    console.log('사용자 환경 생성중입니다')
+    buttonDisabled.value = false
+  }
+}
+
+
+const isActiveWindows = (activeWindows: ActiveWindows): 'vscode' | 'cli' | 'jupyter'  => {
+  if (activeWindows.vscode) {
+    return 'vscode';
+  } else if (activeWindows.webssh) {
+    return 'cli';
+  } else if (activeWindows.notebook) {
+    return 'jupyter';
+  }
+
+  return 'vscode';
 };
 
+// 서비스 타입을 처리하는 함수
+const handleServiceType = (activeWindows: ActiveWindows) => {
+  currentServiceType.value = isActiveWindows(activeWindows);
+  localStorage.setItem('activeWindows', JSON.stringify(activeWindows)); // LocalStorage에 저장
+  console.log(`Received service type: ${currentServiceType.value}`);
+  console.log(`Received activeWindows: ${JSON.stringify(activeWindows)}`);
+};
 
 const handleIdeCreationSuccess = (success: boolean) => {
   if (success === true) {
@@ -320,17 +353,18 @@ const updateButtonDisabled = (value: boolean) => {
           @success="handleIdeCreationSuccess"
           @close-popup="closeCreateWebIDEPopup"
           @update-button-disabled="updateButtonDisabled"
+          @activeWindows="handleServiceType"
       />
     </section>
     <!-- 팝업 모달 -->
     <div v-if="popupVisible" class="modal">
-      <button @click="openCLI">
+      <button @click="openCLI" :disabled="!myActiveWindows.webssh">
         Open CLI RDE
       </button>
-      <button @click="openVscode">
+      <button @click="openVscode" :disabled="!myActiveWindows.vscode">
         Open VSCode RDE
       </button>
-      <button @click="openNotebook">
+      <button @click="openNotebook" :disabled="!myActiveWindows.notebook">
         Open Notebook RDE
       </button>
       <button @click="closePopup">
